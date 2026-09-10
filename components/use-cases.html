@@ -6,8 +6,10 @@
   own stylesheet) — scoped under .usecases-3e8 so it won't leak into surrounding UI.
 
   The right-hand list auto-scrolls forever (pure CSS, list duplicated once so
-  the loop is seamless) with a mask fading the top/bottom so only the items
-  nearest the middle read at full strength.
+  the loop is seamless), fading toward the top/bottom via a mask. A small
+  scoped script tracks which item sits nearest the window's vertical center
+  and toggles a bold/dark "active" state on it only, so exactly one item
+  reads bold at any moment as the loop runs.
 -->
 <style>
   .usecases-3e8 {
@@ -136,14 +138,20 @@
 
   .usecases-3e8__item {
     font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: -0.01em;
     font-size: clamp(28px, 4vw, 46px);
     line-height: 1.02;
-    color: var(--ink);
+    color: var(--muted);
     padding: 0;
     margin: 0;
     white-space: nowrap;
+    transition: color 0.2s ease;
+  }
+
+  .usecases-3e8__item--active {
+    font-weight: 800;
+    color: var(--ink);
   }
 
   @keyframes usecases-3e8-scroll {
@@ -213,3 +221,42 @@
     </div>
   </div>
 </section>
+
+<script>
+  (function () {
+    document.querySelectorAll(".usecases-3e8__window").forEach(function (win) {
+      var track = win.querySelector(".usecases-3e8__track");
+      if (!track) return;
+      var items = Array.prototype.slice.call(
+        track.querySelectorAll(".usecases-3e8__item")
+      );
+      var active = null;
+
+      function tick() {
+        var winRect = win.getBoundingClientRect();
+        var centerY = winRect.top + winRect.height / 2;
+        var closest = null;
+        var closestDist = Infinity;
+
+        items.forEach(function (item) {
+          var r = item.getBoundingClientRect();
+          var dist = Math.abs(r.top + r.height / 2 - centerY);
+          if (dist < closestDist) {
+            closestDist = dist;
+            closest = item;
+          }
+        });
+
+        if (closest !== active) {
+          if (active) active.classList.remove("usecases-3e8__item--active");
+          if (closest) closest.classList.add("usecases-3e8__item--active");
+          active = closest;
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      requestAnimationFrame(tick);
+    });
+  })();
+</script>
