@@ -1,0 +1,214 @@
+<!--
+  3e8 — "Use cases" cycling-list component
+  Standalone, dependency-free markup + styles, sharing the mono type system
+  and color tokens from components/hero.html. Drop the <section class="usecases-3e8">
+  block into any page and keep the <style> block (or move its rules into your
+  own stylesheet) — scoped under .usecases-3e8 so it won't leak into surrounding UI.
+
+  The right-hand list auto-scrolls forever (pure CSS, list duplicated once so
+  the loop is seamless) with a mask fading the top/bottom so only the items
+  nearest the middle read at full strength.
+-->
+<style>
+  .usecases-3e8 {
+    --bg: #fafaf8;
+    --ink: #141414;
+    --muted: #6b6f76;
+    --border: #e4e2dc;
+    --cta-bg: #141414;
+    --cta-ink: #ffffff;
+
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .usecases-3e8:not([data-theme="light"]) {
+      --bg: #111113;
+      --ink: #f2f1ee;
+      --muted: #9a9da3;
+      --border: #2a2a2d;
+      --cta-bg: #f2f1ee;
+      --cta-ink: #141414;
+    }
+  }
+  .usecases-3e8[data-theme="dark"] {
+    --bg: #111113;
+    --ink: #f2f1ee;
+    --muted: #9a9da3;
+    --border: #2a2a2d;
+    --cta-bg: #f2f1ee;
+    --cta-ink: #141414;
+  }
+
+  /* Nav */
+  .usecases-3e8__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px clamp(20px, 4vw, 48px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .usecases-3e8__logo {
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+
+  .usecases-3e8__cta-btn {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    background: var(--cta-bg);
+    color: var(--cta-ink);
+    border: none;
+    border-radius: 999px;
+    padding: 12px 22px;
+    cursor: pointer;
+  }
+
+  /* Body */
+  .usecases-3e8__body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(24px, 6vw, 72px);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(48px, 8vw, 96px) clamp(20px, 4vw, 48px);
+    min-height: 560px;
+  }
+
+  .usecases-3e8__label {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(18px, 2.4vw, 24px);
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .usecases-3e8__window {
+    position: relative;
+    overflow: hidden;
+    height: 460px;
+    flex: 1;
+    min-width: 0;
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgb(0 0 0 / 0.18) 14%,
+      rgb(0 0 0 / 0.55) 30%,
+      rgb(0 0 0 / 0.9) 42%,
+      #000 50%,
+      rgb(0 0 0 / 0.9) 58%,
+      rgb(0 0 0 / 0.55) 70%,
+      rgb(0 0 0 / 0.18) 86%,
+      transparent 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgb(0 0 0 / 0.18) 14%,
+      rgb(0 0 0 / 0.55) 30%,
+      rgb(0 0 0 / 0.9) 42%,
+      #000 50%,
+      rgb(0 0 0 / 0.9) 58%,
+      rgb(0 0 0 / 0.55) 70%,
+      rgb(0 0 0 / 0.18) 86%,
+      transparent 100%
+    );
+  }
+
+  .usecases-3e8__track {
+    display: flex;
+    flex-direction: column;
+    animation: usecases-3e8-scroll 22s linear infinite;
+  }
+
+  .usecases-3e8__window:hover .usecases-3e8__track {
+    animation-play-state: paused;
+  }
+
+  .usecases-3e8__item {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    font-size: clamp(28px, 4vw, 46px);
+    line-height: 1;
+    color: var(--ink);
+    padding: 18px 0;
+    white-space: nowrap;
+  }
+
+  @keyframes usecases-3e8-scroll {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(-50%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .usecases-3e8__track {
+      animation: none;
+    }
+    .usecases-3e8__window {
+      mask-image: none;
+      -webkit-mask-image: none;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .usecases-3e8__body {
+      flex-direction: column;
+      align-items: flex-start;
+      min-height: 0;
+    }
+    .usecases-3e8__window {
+      height: 340px;
+      width: 100%;
+    }
+    .usecases-3e8__item {
+      white-space: normal;
+    }
+  }
+</style>
+
+<section class="usecases-3e8">
+  <nav class="usecases-3e8__nav">
+    <span class="usecases-3e8__logo">3e8</span>
+    <button class="usecases-3e8__cta-btn" type="button">Request access</button>
+  </nav>
+
+  <div class="usecases-3e8__body">
+    <p class="usecases-3e8__label">3e8 helps life sciences companies with</p>
+
+    <div class="usecases-3e8__window">
+      <div class="usecases-3e8__track">
+        <p class="usecases-3e8__item">Deal Assessments</p>
+        <p class="usecases-3e8__item">TPP Testing</p>
+        <p class="usecases-3e8__item">Demand Estimation</p>
+        <p class="usecases-3e8__item">Segmentation</p>
+        <p class="usecases-3e8__item">Patient Journey</p>
+        <p class="usecases-3e8__item">Pricing Research</p>
+        <p class="usecases-3e8__item">Concept &amp; Message Testing</p>
+        <p class="usecases-3e8__item">ATU Studies</p>
+        <p class="usecases-3e8__item">Patient Chart Audits</p>
+        <p class="usecases-3e8__item">Issue-Based Research</p>
+        <!-- duplicated for a seamless loop -->
+        <p class="usecases-3e8__item" aria-hidden="true">Deal Assessments</p>
+        <p class="usecases-3e8__item" aria-hidden="true">TPP Testing</p>
+        <p class="usecases-3e8__item" aria-hidden="true">Demand Estimation</p>
+        <p class="usecases-3e8__item" aria-hidden="true">Segmentation</p>
+        <p class="usecases-3e8__item" aria-hidden="true">Patient Journey</p>
+        <p class="usecases-3e8__item" aria-hidden="true">Pricing Research</p>
+        <p class="usecases-3e8__item" aria-hidden="true">Concept &amp; Message Testing</p>
+        <p class="usecases-3e8__item" aria-hidden="true">ATU Studies</p>
+        <p class="usecases-3e8__item" aria-hidden="true">Patient Chart Audits</p>
+        <p class="usecases-3e8__item" aria-hidden="true">Issue-Based Research</p>
+      </div>
+    </div>
+  </div>
+</section>
