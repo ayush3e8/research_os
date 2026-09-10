@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Careers — 3e8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ===================== Design tokens ===================== */
+  :root {
+    --bg: #fafaf8;
+    --bg-raised: #ffffff;
+    --ink: #141414;
+    --muted: #6b6f76;
+    --border: #e4e2dc;
+    --cta-bg: #141414;
+    --cta-ink: #ffffff;
+    --card-bg: #ffffff;
+
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+    --sans: "Plus Jakarta Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111113;
+      --bg-raised: #17171a;
+      --ink: #f2f1ee;
+      --muted: #9a9da3;
+      --border: #2a2a2d;
+      --cta-bg: #f2f1ee;
+      --cta-ink: #141414;
+      --card-bg: #17171a;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111113;
+    --bg-raised: #17171a;
+    --ink: #f2f1ee;
+    --muted: #9a9da3;
+    --border: #2a2a2d;
+    --cta-bg: #f2f1ee;
+    --cta-ink: #141414;
+    --card-bg: #17171a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 76px;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  /* ===================== Reveal-on-scroll ===================== */
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+  @media print {
+    .reveal {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  /* ===================== Site nav ===================== */
+  .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 18px clamp(20px, 4vw, 48px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+  }
+
+  .site-nav__logo {
+    font-weight: 800;
+    font-size: 19px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+  }
+
+  .site-nav__links {
+    display: flex;
+    gap: clamp(18px, 3vw, 34px);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .site-nav__links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+    transition: color 0.15s ease;
+  }
+
+  .site-nav__links a:hover {
+    color: var(--ink);
+  }
+
+  .site-nav__links a[aria-current="page"] {
+    color: var(--ink);
+  }
+
+  .site-nav__right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .cta-pill {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    background: var(--cta-bg);
+    color: var(--cta-ink);
+    border: none;
+    border-radius: 999px;
+    padding: 12px 22px;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .cta-pill:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+  }
+
+  .site-nav__menu-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .site-nav__menu-btn svg { pointer-events: none; }
+
+  .site-nav__mobile {
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px clamp(20px, 4vw, 48px) 18px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  .site-nav__mobile a {
+    color: var(--muted);
+    text-decoration: none;
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .site-nav__mobile a:last-child { border-bottom: none; }
+  .site-nav__mobile.is-open { display: flex; }
+
+  @media (max-width: 780px) {
+    .site-nav__links { display: none; }
+    .site-nav__menu-btn { display: inline-flex; align-items: center; justify-content: center; }
+  }
+
+  /* ===================== Shared section header ===================== */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .section-title {
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    font-size: clamp(30px, 4vw, 44px);
+    margin: 0 0 20px;
+  }
+
+  .section-header {
+    max-width: 720px;
+    margin: 0 auto clamp(48px, 7vw, 72px);
+    text-align: center;
+  }
+
+  /* ===================== Careers ===================== */
+  .careers {
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  .careers__inner {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(56px, 9vw, 112px) clamp(20px, 4vw, 48px) clamp(64px, 9vw, 128px);
+  }
+
+  .careers__philosophy {
+    column-count: 2;
+    column-gap: clamp(32px, 5vw, 56px);
+    margin-bottom: clamp(48px, 7vw, 72px);
+    padding-bottom: clamp(48px, 7vw, 72px);
+    border-bottom: 1px solid var(--border);
+  }
+  .careers__philosophy p {
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin: 0 0 16px;
+    break-inside: avoid;
+  }
+  .careers__philosophy p:last-child { margin-bottom: 0; }
+  .careers__philosophy strong { color: var(--ink); font-weight: 600; }
+
+  @media (max-width: 760px) {
+    .careers__philosophy { column-count: 1; }
+  }
+
+  .careers__roles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(24px, 3vw, 32px);
+  }
+
+  @media (max-width: 760px) {
+    .careers__roles { grid-template-columns: 1fr; }
+  }
+
+  .careers__card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: clamp(24px, 4vw, 32px);
+    transition: border-color 0.2s ease, transform 0.2s ease;
+  }
+  .careers__card:hover {
+    border-color: color-mix(in srgb, var(--ink) 25%, var(--border));
+    transform: translateY(-2px);
+  }
+
+  .careers__role {
+    font-family: var(--sans);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    font-size: clamp(20px, 2.2vw, 22px);
+    margin: 0 0 8px;
+  }
+
+  .careers__meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+
+  .careers__desc {
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .careers__apply {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    background: var(--cta-bg);
+    color: var(--cta-ink);
+    border: none;
+    border-radius: 999px;
+    padding: 11px 20px;
+    margin-top: 4px;
+  }
+
+  /* ===================== Footer ===================== */
+  .site-footer {
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding: clamp(48px, 7vw, 72px) clamp(20px, 4vw, 48px) 32px;
+  }
+
+  .site-footer__grid {
+    max-width: 1180px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    gap: 32px;
+    padding-bottom: 40px;
+  }
+
+  .site-footer__brand {
+    font-family: var(--mono);
+    font-weight: 800;
+    font-size: 19px;
+    margin: 0 0 12px;
+  }
+
+  .site-footer__blurb {
+    font-family: var(--sans);
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 32ch;
+    margin: 0;
+  }
+
+  .site-footer__heading {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .site-footer__links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .site-footer__links a {
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .site-footer__links a:hover { color: var(--muted); }
+
+  .site-footer__bottom {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  @media (max-width: 720px) {
+    .site-footer__grid { grid-template-columns: 1fr; gap: 28px; }
+  }
+</style>
+<noscript>
+  <style>
+    .reveal { opacity: 1 !important; transform: none !important; }
+  </style>
+</noscript>
+</head>
+<body>
+
+  <!-- ===================== Nav ===================== -->
+  <header>
+    <nav class="site-nav">
+      <a class="site-nav__logo" href="index.html">3e8</a>
+      <ul class="site-nav__links">
+        <li><a href="index.html#how-we-work">How We Work</a></li>
+        <li><a href="index.html#story">Our Story</a></li>
+        <li><a href="careers.html" aria-current="page">Careers</a></li>
+      </ul>
+      <div class="site-nav__right">
+        <a class="cta-pill" href="mailto:hello@3e8.ai">Contact Us</a>
+        <button class="site-nav__menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false" id="nav-menu-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </nav>
+    <div class="site-nav__mobile" id="nav-mobile">
+      <a href="index.html#how-we-work">How We Work</a>
+      <a href="index.html#story">Our Story</a>
+      <a href="careers.html">Careers</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== Careers ===================== -->
+    <section class="careers">
+      <div class="careers__inner">
+        <div class="section-header reveal">
+          <p class="eyebrow">Careers</p>
+          <h1 class="section-title">Come build a different kind of research firm</h1>
+        </div>
+
+        <div class="careers__philosophy reveal">
+          <p>
+            We believe some of the best people in our industry are capable
+            of far more than the traditional model allows.
+          </p>
+          <p>
+            At 3e8, we're building a place for people who want more
+            ownership, more room to create, and the opportunity to rethink
+            how great insights get generated from the ground up.
+          </p>
+          <p>
+            <strong>AI is fundamental to that ambition.</strong> We expect
+            everyone here to be excited about building with it,
+            experimenting with it, and using it to dramatically expand what
+            they can accomplish.
+          </p>
+          <p>
+            We're currently collecting interest for two roles as we expand
+            our founding team.
+          </p>
+        </div>
+
+        <div class="careers__roles">
+          <div class="careers__card reveal">
+            <h2 class="careers__role">Principal, Market Research</h2>
+            <p class="careers__meta">Senior · 12+ Years · Biopharma Market Research</p>
+            <p class="careers__desc">
+              You're an Associate Principal, Principal, or equivalent at a
+              leading life sciences consulting firm, have spent 12+ years
+              leading market research for pharma and biotech clients, and
+              believe there should be a faster, leaner, more modern way to
+              do the work.
+            </p>
+            <p class="careers__desc">
+              As an early senior leader, you'll not just own client
+              relationships and engagements but also help shape our
+              methods, capabilities, talent, and point of view on what the
+              next era of insights generation in life sciences looks like.
+            </p>
+            <a class="careers__apply" href="mailto:careers@3e8.ai?subject=Principal%2C%20Market%20Research">
+              Submit Interest →
+            </a>
+          </div>
+
+          <div class="careers__card reveal">
+            <h2 class="careers__role">Founding AI Engineer</h2>
+            <p class="careers__meta">Staff · Hands-on · AI &amp; Software Engineering</p>
+            <p class="careers__desc">
+              You're a senior, hands-on engineer who has built and scaled
+              production software and has gone deep on modern AI systems.
+            </p>
+            <p class="careers__desc">
+              At 3e8, you'll own the technical foundation behind an
+              AI-native market research firm — shaping our architecture,
+              agentic workflows, data and infrastructure, and building
+              systems that can reliably support increasing complexity and
+              client volume.
+            </p>
+            <p class="careers__desc">
+              As an early technical leader, you'll help define our roadmap,
+              build the engineering team, and shape how far AI can
+              transform the way market research gets done.
+            </p>
+            <a class="careers__apply" href="mailto:careers@3e8.ai?subject=Founding%20AI%20Engineer">
+              Submit Interest →
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== Footer ===================== -->
+  <footer class="site-footer">
+    <div class="site-footer__grid">
+      <div>
+        <p class="site-footer__brand">3e8</p>
+        <p class="site-footer__blurb">
+          The AI-native firm for biopharma market research. Agentic
+          workflows, senior-led engagements, insights in days not weeks.
+        </p>
+      </div>
+      <div>
+        <p class="site-footer__heading">Explore</p>
+        <ul class="site-footer__links">
+          <li><a href="index.html#how-we-work">How We Work</a></li>
+          <li><a href="index.html#story">Our Story</a></li>
+          <li><a href="careers.html">Careers</a></li>
+        </ul>
+      </div>
+      <div>
+        <p class="site-footer__heading">Contact</p>
+        <ul class="site-footer__links">
+          <li><a href="mailto:hello@3e8.ai">hello@3e8.ai</a></li>
+          <li><a href="mailto:careers@3e8.ai">careers@3e8.ai</a></li>
+          <li><a href="https://www.linkedin.com/company/3e8" target="_blank" rel="noopener">LinkedIn</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="site-footer__bottom">
+      <span>© 2026 3e8. All rights reserved.</span>
+      <span>Built for life sciences.</span>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      // Mobile nav toggle
+      var menuBtn = document.getElementById("nav-menu-btn");
+      var mobileNav = document.getElementById("nav-mobile");
+      if (menuBtn && mobileNav) {
+        menuBtn.addEventListener("click", function () {
+          var isOpen = mobileNav.classList.toggle("is-open");
+          menuBtn.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        });
+        mobileNav.querySelectorAll("a").forEach(function (a) {
+          a.addEventListener("click", function () {
+            mobileNav.classList.remove("is-open");
+            menuBtn.setAttribute("aria-expanded", "false");
+          });
+        });
+      }
+
+      // Reveal-on-scroll
+      var revealEls = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+      if ("IntersectionObserver" in window && revealEls.length) {
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                io.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+        );
+        revealEls.forEach(function (el) { io.observe(el); });
+      } else {
+        revealEls.forEach(function (el) { el.classList.add("is-visible"); });
+      }
+    })();
+  </script>
+</body>
+</html>
