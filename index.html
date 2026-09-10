@@ -470,22 +470,36 @@
   }
 
   .careers__inner {
-    max-width: 860px;
+    max-width: 1180px;
     margin: 0 auto;
     padding: clamp(64px, 9vw, 128px) clamp(20px, 4vw, 48px);
   }
 
-  .careers__roles {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+  .careers__columns {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(20px, 3vw, 32px);
+    align-items: start;
   }
+
+  .careers__philosophy {
+    padding-top: clamp(20px, 3vw, 28px);
+  }
+  .careers__philosophy p {
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--muted);
+    margin: 0 0 14px;
+  }
+  .careers__philosophy p:last-child { margin-bottom: 0; }
+  .careers__philosophy strong { color: var(--ink); font-weight: 600; }
 
   .careers__card {
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: clamp(24px, 4vw, 36px);
+    padding: clamp(20px, 3vw, 28px);
     transition: border-color 0.2s ease, transform 0.2s ease;
   }
   .careers__card:hover {
@@ -506,27 +520,26 @@
     font-family: var(--sans);
     font-weight: 600;
     letter-spacing: -0.01em;
-    font-size: clamp(20px, 2.4vw, 24px);
+    font-size: 19px;
     margin: 0;
   }
 
   .careers__meta {
     font-family: var(--mono);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
-    margin: 0 0 18px;
+    margin: 0 0 16px;
   }
 
   .careers__desc {
     font-family: var(--sans);
-    font-size: 15px;
-    line-height: 1.7;
+    font-size: 14px;
+    line-height: 1.6;
     color: var(--muted);
-    margin: 0 0 24px;
-    max-width: 62ch;
+    margin: 0 0 16px;
   }
 
   .careers__apply {
@@ -543,10 +556,12 @@
     border: none;
     border-radius: 999px;
     padding: 11px 20px;
+    margin-top: 4px;
   }
 
-  @media (max-width: 480px) {
-    .careers__card-head { flex-direction: column; align-items: flex-start; }
+  @media (max-width: 860px) {
+    .careers__columns { grid-template-columns: 1fr; }
+    .careers__philosophy { padding-top: 0; order: -1; margin-bottom: 8px; }
   }
 
   /* ===================== Final CTA ===================== */
@@ -904,7 +919,7 @@
     <section class="story" id="story">
       <div class="story__inner">
         <div class="section-header reveal">
-          <p class="eyebrow">Our Story</p>
+          <p class="eyebrow">Who We Are</p>
           <h2 class="section-title">
             We have spent years advising leading life sciences companies on
             some of their most important decisions.
@@ -970,28 +985,31 @@
         <div class="section-header reveal">
           <p class="eyebrow">Careers</p>
           <h1 class="section-title">Come build a different kind of research firm</h1>
-          <p class="section-intro">
-            We believe some of the best people in our industry are capable
-            of far more than the traditional model allows.
-          </p>
-          <p class="section-intro">
-            At 3e8, we're building a place for people who want more
-            ownership, more room to create, and the opportunity to rethink
-            how great insights get generated from the ground up.
-          </p>
-          <p class="section-intro">
-            <strong>AI is fundamental to that ambition.</strong> We expect
-            everyone here to be excited about building with it,
-            experimenting with it, and using it to dramatically expand what
-            they can accomplish.
-          </p>
-          <p class="section-intro">
-            We're currently collecting interest for two roles as we expand
-            our founding team.
-          </p>
         </div>
 
-        <div class="careers__roles">
+        <div class="careers__columns">
+          <div class="careers__philosophy reveal">
+            <p>
+              We believe some of the best people in our industry are
+              capable of far more than the traditional model allows.
+            </p>
+            <p>
+              At 3e8, we're building a place for people who want more
+              ownership, more room to create, and the opportunity to
+              rethink how great insights get generated from the ground up.
+            </p>
+            <p>
+              <strong>AI is fundamental to that ambition.</strong> We
+              expect everyone here to be excited about building with it,
+              experimenting with it, and using it to dramatically expand
+              what they can accomplish.
+            </p>
+            <p>
+              We're currently collecting interest for two roles as we
+              expand our founding team.
+            </p>
+          </div>
+
           <div class="careers__card reveal">
             <div class="careers__card-head">
               <h2 class="careers__role">Principal, Market Research</h2>
@@ -1046,7 +1064,7 @@
 
     <!-- ===================== Final CTA ===================== -->
     <section class="final-cta">
-      <h2 class="final-cta__title reveal">See how agentic market research works for your team</h2>
+      <h2 class="final-cta__title reveal">Explore how an AI-native delivery model can help your team generate deeper insights, faster</h2>
       <p class="final-cta__sub reveal">
         Tell us a bit about what you're working on and we'll be in touch.
       </p>
