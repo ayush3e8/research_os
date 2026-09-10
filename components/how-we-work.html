@@ -5,9 +5,17 @@
   block into any page and keep the <style> block (or move its rules into your
   own stylesheet) — scoped under .how-3e8 so it won't leak into surrounding UI.
 
-  The right-hand illustration (converging lines feeding a data grid) is
-  defined once as an SVG <symbol> and reused via <use> in each row, mirrored
-  on the third row for a touch of variety. Pure decoration — aria-hidden.
+  Each row gets its own right-hand illustration, tied to what that row
+  actually says (defined once as an SVG <symbol>, referenced via <use>):
+    01 — a single expert node with direct, solid lines straight to each
+         piece of evidence (documents) — no intermediary layers.
+    02 — a swarm of small "agent" nodes fanning into a few synthesis
+         nodes, which converge into one insight (sparkle) — many small
+         tasks, one output.
+    03 — four differently-styled paths (solid / dashed / dotted /
+         dash-dot, each with its own start marker) converging on one
+         target — different methods, one decision.
+  Pure decoration — aria-hidden.
 -->
 <style>
   .how-3e8 {
@@ -124,10 +132,6 @@
     overflow: visible;
   }
 
-  .how-3e8__art--flip {
-    transform: scaleX(-1);
-  }
-
   @media (max-width: 860px) {
     .how-3e8__row {
       grid-template-columns: 1fr;
@@ -142,190 +146,107 @@
 <section class="how-3e8">
   <svg width="0" height="0" style="position: absolute" aria-hidden="true">
     <defs>
-      <symbol id="how-3e8-flow" viewBox="0 0 640 380">
-        <path d="M20,90 C180,90 235,40 395,40" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,90 C180,90 235,84 395,84" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,90 C180,90 235,128 395,128" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,90 C180,90 235,172 395,172" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.38"/>
-        <path d="M20,90 C180,90 235,216 395,216" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.32"/>
-        <path d="M20,90 C180,90 235,260 395,260" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.26"/>
-        <path d="M20,90 C180,90 235,304 395,304" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.19"/>
-        <path d="M20,90 C180,90 235,348 395,348" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.13"/>
-        <path d="M20,190 C180,190 235,40 395,40" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.29"/>
-        <path d="M20,190 C180,190 235,84 395,84" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.35"/>
-        <path d="M20,190 C180,190 235,128 395,128" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,190 C180,190 235,172 395,172" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,190 C180,190 235,216 395,216" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,190 C180,190 235,260 395,260" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,190 C180,190 235,304 395,304" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.34"/>
-        <path d="M20,190 C180,190 235,348 395,348" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.27"/>
-        <path d="M20,290 C180,290 235,40 395,40" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.14"/>
-        <path d="M20,290 C180,290 235,84 395,84" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.21"/>
-        <path d="M20,290 C180,290 235,128 395,128" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.27"/>
-        <path d="M20,290 C180,290 235,172 395,172" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.33"/>
-        <path d="M20,290 C180,290 235,216 395,216" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.39"/>
-        <path d="M20,290 C180,290 235,260 395,260" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,290 C180,290 235,304 395,304" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
-        <path d="M20,290 C180,290 235,348 395,348" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.4"/>
+      <!-- 01: one expert, direct lines straight to each piece of evidence -->
+      <symbol id="how-3e8-visual-expert" viewBox="0 0 640 380">
+        <path d="M90,190 C310,190 340,70 500,70" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55" stroke-linecap="round"/>
+        <path d="M90,190 C310,190 340,150 500,150" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55" stroke-linecap="round"/>
+        <path d="M90,190 C310,190 340,230 500,230" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55" stroke-linecap="round"/>
+        <path d="M90,190 C310,190 340,310 500,310" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55" stroke-linecap="round"/>
 
-        <circle cx="20" cy="90" r="3" fill="currentColor" opacity="0.7"/>
-        <circle cx="20" cy="190" r="3" fill="currentColor" opacity="0.7"/>
-        <circle cx="20" cy="290" r="3" fill="currentColor" opacity="0.7"/>
+        <circle cx="90" cy="190" r="16" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.8"/>
+        <circle cx="90" cy="190" r="6" fill="currentColor" opacity="0.85"/>
 
-        <circle cx="400.0" cy="20.0" r="0.92" fill="currentColor" opacity="0.06"/>
-        <circle cx="416.9" cy="20.0" r="0.86" fill="currentColor" opacity="0.07"/>
-        <circle cx="433.8" cy="20.0" r="1.09" fill="currentColor" opacity="0.07"/>
-        <circle cx="450.8" cy="20.0" r="1.21" fill="currentColor" opacity="0.04"/>
-        <circle cx="467.7" cy="20.0" r="1.15" fill="currentColor" opacity="0.04"/>
-        <circle cx="484.6" cy="20.0" r="0.87" fill="currentColor" opacity="0.04"/>
-        <circle cx="501.5" cy="20.0" r="1.46" fill="currentColor" opacity="0.06"/>
-        <circle cx="518.5" cy="20.0" r="0.98" fill="currentColor" opacity="0.05"/>
-        <circle cx="535.4" cy="20.0" r="1.56" fill="currentColor" opacity="0.07"/>
-        <circle cx="552.3" cy="20.0" r="1.12" fill="currentColor" opacity="0.07"/>
-        <circle cx="569.2" cy="20.0" r="0.84" fill="currentColor" opacity="0.09"/>
-        <circle cx="586.2" cy="20.0" r="1.03" fill="currentColor" opacity="0.08"/>
-        <circle cx="603.1" cy="20.0" r="0.89" fill="currentColor" opacity="0.05"/>
-        <circle cx="620.0" cy="20.0" r="1.45" fill="currentColor" opacity="0.06"/>
-        <circle cx="400.0" cy="54.0" r="1.27" fill="currentColor" opacity="0.1"/>
-        <circle cx="416.9" cy="54.0" r="1.1" fill="currentColor" opacity="0.15"/>
-        <circle cx="433.8" cy="54.0" r="0.85" fill="currentColor" opacity="0.14"/>
-        <circle cx="450.8" cy="54.0" r="0.96" fill="currentColor" opacity="0.09"/>
-        <circle cx="467.7" cy="54.0" r="1.14" fill="currentColor" opacity="0.15"/>
-        <circle cx="484.6" cy="54.0" r="1.27" fill="currentColor" opacity="0.12"/>
-        <circle cx="501.5" cy="54.0" r="1.04" fill="currentColor" opacity="0.13"/>
-        <circle cx="518.5" cy="54.0" r="1.36" fill="currentColor" opacity="0.17"/>
-        <circle cx="535.4" cy="54.0" r="1.26" fill="currentColor" opacity="0.11"/>
-        <circle cx="552.3" cy="54.0" r="1.5" fill="currentColor" opacity="0.14"/>
-        <circle cx="569.2" cy="54.0" r="1.03" fill="currentColor" opacity="0.16"/>
-        <circle cx="586.2" cy="54.0" r="0.89" fill="currentColor" opacity="0.19"/>
-        <circle cx="603.1" cy="54.0" r="1.41" fill="currentColor" opacity="0.13"/>
-        <circle cx="620.0" cy="54.0" r="1.19" fill="currentColor" opacity="0.1"/>
-        <circle cx="400.0" cy="88.0" r="1.33" fill="currentColor" opacity="0.13"/>
-        <circle cx="416.9" cy="88.0" r="1.26" fill="currentColor" opacity="0.25"/>
-        <circle cx="433.8" cy="88.0" r="1.05" fill="currentColor" opacity="0.27"/>
-        <circle cx="450.8" cy="88.0" r="1.28" fill="currentColor" opacity="0.24"/>
-        <circle cx="467.7" cy="88.0" r="1.16" fill="currentColor" opacity="0.22"/>
-        <circle cx="484.6" cy="88.0" r="1.56" fill="currentColor" opacity="0.26"/>
-        <circle cx="501.5" cy="88.0" r="1.33" fill="currentColor" opacity="0.2"/>
-        <circle cx="518.5" cy="88.0" r="1.36" fill="currentColor" opacity="0.13"/>
-        <circle cx="535.4" cy="88.0" r="1.59" fill="currentColor" opacity="0.23"/>
-        <circle cx="552.3" cy="88.0" r="1.03" fill="currentColor" opacity="0.26"/>
-        <circle cx="569.2" cy="88.0" r="1.33" fill="currentColor" opacity="0.19"/>
-        <circle cx="586.2" cy="88.0" r="1.17" fill="currentColor" opacity="0.13"/>
-        <circle cx="603.1" cy="88.0" r="0.89" fill="currentColor" opacity="0.15"/>
-        <circle cx="620.0" cy="88.0" r="1.41" fill="currentColor" opacity="0.13"/>
-        <circle cx="400.0" cy="122.0" r="1.0" fill="currentColor" opacity="0.19"/>
-        <circle cx="416.9" cy="122.0" r="1.5" fill="currentColor" opacity="0.25"/>
-        <circle cx="433.8" cy="122.0" r="1.16" fill="currentColor" opacity="0.18"/>
-        <circle cx="450.8" cy="122.0" r="1.51" fill="currentColor" opacity="0.28"/>
-        <circle cx="467.7" cy="122.0" r="1.49" fill="currentColor" opacity="0.34"/>
-        <circle cx="484.6" cy="122.0" r="1.13" fill="currentColor" opacity="0.23"/>
-        <circle cx="501.5" cy="122.0" r="1.51" fill="currentColor" opacity="0.24"/>
-        <circle cx="518.5" cy="122.0" r="0.92" fill="currentColor" opacity="0.37"/>
-        <circle cx="535.4" cy="122.0" r="0.99" fill="currentColor" opacity="0.2"/>
-        <circle cx="552.3" cy="122.0" r="1.19" fill="currentColor" opacity="0.22"/>
-        <circle cx="569.2" cy="122.0" r="1.01" fill="currentColor" opacity="0.29"/>
-        <circle cx="586.2" cy="122.0" r="1.14" fill="currentColor" opacity="0.17"/>
-        <circle cx="603.1" cy="122.0" r="1.25" fill="currentColor" opacity="0.25"/>
-        <circle cx="620.0" cy="122.0" r="1.35" fill="currentColor" opacity="0.37"/>
-        <circle cx="400.0" cy="156.0" r="1.29" fill="currentColor" opacity="0.35"/>
-        <circle cx="416.9" cy="156.0" r="0.84" fill="currentColor" opacity="0.39"/>
-        <circle cx="433.8" cy="156.0" r="1.42" fill="currentColor" opacity="0.45"/>
-        <circle cx="450.8" cy="156.0" r="1.44" fill="currentColor" opacity="0.44"/>
-        <circle cx="467.7" cy="156.0" r="1.12" fill="currentColor" opacity="0.31"/>
-        <circle cx="484.6" cy="156.0" r="1.31" fill="currentColor" opacity="0.24"/>
-        <circle cx="501.5" cy="156.0" r="0.85" fill="currentColor" opacity="0.22"/>
-        <circle cx="518.5" cy="156.0" r="0.93" fill="currentColor" opacity="0.26"/>
-        <circle cx="535.4" cy="156.0" r="0.84" fill="currentColor" opacity="0.3"/>
-        <circle cx="552.3" cy="156.0" r="0.92" fill="currentColor" opacity="0.21"/>
-        <circle cx="569.2" cy="156.0" r="1.09" fill="currentColor" opacity="0.24"/>
-        <circle cx="586.2" cy="156.0" r="1.5" fill="currentColor" opacity="0.21"/>
-        <circle cx="603.1" cy="156.0" r="0.92" fill="currentColor" opacity="0.37"/>
-        <circle cx="620.0" cy="156.0" r="1.08" fill="currentColor" opacity="0.28"/>
-        <circle cx="400.0" cy="190.0" r="0.9" fill="currentColor" opacity="0.37"/>
-        <circle cx="416.9" cy="190.0" r="1.59" fill="currentColor" opacity="0.53"/>
-        <circle cx="433.8" cy="190.0" r="1.19" fill="currentColor" opacity="0.4"/>
-        <circle cx="450.8" cy="190.0" r="0.88" fill="currentColor" opacity="0.28"/>
-        <circle cx="467.7" cy="190.0" r="1.01" fill="currentColor" opacity="0.36"/>
-        <circle cx="484.6" cy="190.0" r="0.93" fill="currentColor" opacity="0.52"/>
-        <circle cx="501.5" cy="190.0" r="1.56" fill="currentColor" opacity="0.26"/>
-        <circle cx="518.5" cy="190.0" r="0.92" fill="currentColor" opacity="0.42"/>
-        <circle cx="535.4" cy="190.0" r="0.82" fill="currentColor" opacity="0.43"/>
-        <circle cx="552.3" cy="190.0" r="1.58" fill="currentColor" opacity="0.42"/>
-        <circle cx="569.2" cy="190.0" r="1.36" fill="currentColor" opacity="0.53"/>
-        <circle cx="586.2" cy="190.0" r="1.09" fill="currentColor" opacity="0.33"/>
-        <circle cx="603.1" cy="190.0" r="1.42" fill="currentColor" opacity="0.3"/>
-        <circle cx="620.0" cy="190.0" r="1.42" fill="currentColor" opacity="0.42"/>
-        <circle cx="400.0" cy="224.0" r="0.98" fill="currentColor" opacity="0.3"/>
-        <circle cx="416.9" cy="224.0" r="1.59" fill="currentColor" opacity="0.43"/>
-        <circle cx="433.8" cy="224.0" r="1.44" fill="currentColor" opacity="0.44"/>
-        <circle cx="450.8" cy="224.0" r="1.39" fill="currentColor" opacity="0.43"/>
-        <circle cx="467.7" cy="224.0" r="1.21" fill="currentColor" opacity="0.27"/>
-        <circle cx="484.6" cy="224.0" r="0.82" fill="currentColor" opacity="0.3"/>
-        <circle cx="501.5" cy="224.0" r="1.02" fill="currentColor" opacity="0.22"/>
-        <circle cx="518.5" cy="224.0" r="1.35" fill="currentColor" opacity="0.28"/>
-        <circle cx="535.4" cy="224.0" r="1.16" fill="currentColor" opacity="0.47"/>
-        <circle cx="552.3" cy="224.0" r="1.59" fill="currentColor" opacity="0.46"/>
-        <circle cx="569.2" cy="224.0" r="1.09" fill="currentColor" opacity="0.47"/>
-        <circle cx="586.2" cy="224.0" r="0.98" fill="currentColor" opacity="0.27"/>
-        <circle cx="603.1" cy="224.0" r="0.96" fill="currentColor" opacity="0.26"/>
-        <circle cx="620.0" cy="224.0" r="1.52" fill="currentColor" opacity="0.38"/>
-        <circle cx="400.0" cy="258.0" r="1.18" fill="currentColor" opacity="0.35"/>
-        <circle cx="416.9" cy="258.0" r="1.44" fill="currentColor" opacity="0.31"/>
-        <circle cx="433.8" cy="258.0" r="1.33" fill="currentColor" opacity="0.18"/>
-        <circle cx="450.8" cy="258.0" r="1.43" fill="currentColor" opacity="0.36"/>
-        <circle cx="467.7" cy="258.0" r="1.18" fill="currentColor" opacity="0.33"/>
-        <circle cx="484.6" cy="258.0" r="1.43" fill="currentColor" opacity="0.2"/>
-        <circle cx="501.5" cy="258.0" r="1.44" fill="currentColor" opacity="0.24"/>
-        <circle cx="518.5" cy="258.0" r="1.12" fill="currentColor" opacity="0.38"/>
-        <circle cx="535.4" cy="258.0" r="1.56" fill="currentColor" opacity="0.25"/>
-        <circle cx="552.3" cy="258.0" r="0.94" fill="currentColor" opacity="0.32"/>
-        <circle cx="569.2" cy="258.0" r="0.92" fill="currentColor" opacity="0.19"/>
-        <circle cx="586.2" cy="258.0" r="1.45" fill="currentColor" opacity="0.36"/>
-        <circle cx="603.1" cy="258.0" r="1.46" fill="currentColor" opacity="0.2"/>
-        <circle cx="620.0" cy="258.0" r="1.33" fill="currentColor" opacity="0.38"/>
-        <circle cx="400.0" cy="292.0" r="1.24" fill="currentColor" opacity="0.18"/>
-        <circle cx="416.9" cy="292.0" r="0.81" fill="currentColor" opacity="0.15"/>
-        <circle cx="433.8" cy="292.0" r="1.32" fill="currentColor" opacity="0.28"/>
-        <circle cx="450.8" cy="292.0" r="1.55" fill="currentColor" opacity="0.21"/>
-        <circle cx="467.7" cy="292.0" r="1.5" fill="currentColor" opacity="0.19"/>
-        <circle cx="484.6" cy="292.0" r="0.97" fill="currentColor" opacity="0.26"/>
-        <circle cx="501.5" cy="292.0" r="1.03" fill="currentColor" opacity="0.16"/>
-        <circle cx="518.5" cy="292.0" r="1.27" fill="currentColor" opacity="0.16"/>
-        <circle cx="535.4" cy="292.0" r="1.14" fill="currentColor" opacity="0.17"/>
-        <circle cx="552.3" cy="292.0" r="1.53" fill="currentColor" opacity="0.15"/>
-        <circle cx="569.2" cy="292.0" r="1.17" fill="currentColor" opacity="0.18"/>
-        <circle cx="586.2" cy="292.0" r="1.52" fill="currentColor" opacity="0.22"/>
-        <circle cx="603.1" cy="292.0" r="1.53" fill="currentColor" opacity="0.19"/>
-        <circle cx="620.0" cy="292.0" r="1.23" fill="currentColor" opacity="0.2"/>
-        <circle cx="400.0" cy="326.0" r="0.81" fill="currentColor" opacity="0.14"/>
-        <circle cx="416.9" cy="326.0" r="0.95" fill="currentColor" opacity="0.13"/>
-        <circle cx="433.8" cy="326.0" r="1.44" fill="currentColor" opacity="0.08"/>
-        <circle cx="450.8" cy="326.0" r="1.18" fill="currentColor" opacity="0.1"/>
-        <circle cx="467.7" cy="326.0" r="1.25" fill="currentColor" opacity="0.16"/>
-        <circle cx="484.6" cy="326.0" r="1.21" fill="currentColor" opacity="0.12"/>
-        <circle cx="501.5" cy="326.0" r="1.43" fill="currentColor" opacity="0.14"/>
-        <circle cx="518.5" cy="326.0" r="1.25" fill="currentColor" opacity="0.09"/>
-        <circle cx="535.4" cy="326.0" r="1.02" fill="currentColor" opacity="0.11"/>
-        <circle cx="552.3" cy="326.0" r="1.21" fill="currentColor" opacity="0.16"/>
-        <circle cx="569.2" cy="326.0" r="1.41" fill="currentColor" opacity="0.14"/>
-        <circle cx="586.2" cy="326.0" r="1.15" fill="currentColor" opacity="0.18"/>
-        <circle cx="603.1" cy="326.0" r="1.2" fill="currentColor" opacity="0.15"/>
-        <circle cx="620.0" cy="326.0" r="1.35" fill="currentColor" opacity="0.14"/>
-        <circle cx="400.0" cy="360.0" r="1.23" fill="currentColor" opacity="0.06"/>
-        <circle cx="416.9" cy="360.0" r="1.55" fill="currentColor" opacity="0.06"/>
-        <circle cx="433.8" cy="360.0" r="1.5" fill="currentColor" opacity="0.08"/>
-        <circle cx="450.8" cy="360.0" r="1.01" fill="currentColor" opacity="0.09"/>
-        <circle cx="467.7" cy="360.0" r="1.55" fill="currentColor" opacity="0.07"/>
-        <circle cx="484.6" cy="360.0" r="0.91" fill="currentColor" opacity="0.08"/>
-        <circle cx="501.5" cy="360.0" r="1.15" fill="currentColor" opacity="0.05"/>
-        <circle cx="518.5" cy="360.0" r="0.99" fill="currentColor" opacity="0.04"/>
-        <circle cx="535.4" cy="360.0" r="1.34" fill="currentColor" opacity="0.04"/>
-        <circle cx="552.3" cy="360.0" r="1.52" fill="currentColor" opacity="0.08"/>
-        <circle cx="569.2" cy="360.0" r="1.37" fill="currentColor" opacity="0.05"/>
-        <circle cx="586.2" cy="360.0" r="0.91" fill="currentColor" opacity="0.07"/>
-        <circle cx="603.1" cy="360.0" r="1.57" fill="currentColor" opacity="0.09"/>
-        <circle cx="620.0" cy="360.0" r="1.56" fill="currentColor" opacity="0.05"/>
+        <g transform="translate(520,52)" opacity="0.85">
+          <rect x="0" y="0" width="40" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="8" y1="10" x2="32" y2="10" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="18" x2="32" y2="18" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="26" x2="24" y2="26" stroke="currentColor" stroke-width="1.2"/>
+        </g>
+        <g transform="translate(520,132)" opacity="0.85">
+          <rect x="0" y="0" width="40" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="8" y1="10" x2="32" y2="10" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="18" x2="32" y2="18" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="26" x2="24" y2="26" stroke="currentColor" stroke-width="1.2"/>
+        </g>
+        <g transform="translate(520,212)" opacity="0.85">
+          <rect x="0" y="0" width="40" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="8" y1="10" x2="32" y2="10" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="18" x2="32" y2="18" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="26" x2="24" y2="26" stroke="currentColor" stroke-width="1.2"/>
+        </g>
+        <g transform="translate(520,292)" opacity="0.85">
+          <rect x="0" y="0" width="40" height="36" rx="4" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <line x1="8" y1="10" x2="32" y2="10" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="18" x2="32" y2="18" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="8" y1="26" x2="24" y2="26" stroke="currentColor" stroke-width="1.2"/>
+        </g>
+      </symbol>
+
+      <!-- 02: a swarm of agents fanning into a few synthesis nodes, into one insight -->
+      <symbol id="how-3e8-visual-agents" viewBox="0 0 640 380">
+        <path d="M50,60 C180,60 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.22" stroke-linecap="round"/>
+        <path d="M50,60 C180,60 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.13" stroke-linecap="round"/>
+        <path d="M50,60 C180,60 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.06" stroke-linecap="round"/>
+        <path d="M80,120 C210,120 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.27" stroke-linecap="round"/>
+        <path d="M80,120 C210,120 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.2" stroke-linecap="round"/>
+        <path d="M80,120 C210,120 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.1" stroke-linecap="round"/>
+        <path d="M50,180 C180,180 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.2" stroke-linecap="round"/>
+        <path d="M50,180 C180,180 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.26" stroke-linecap="round"/>
+        <path d="M50,180 C180,180 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.17" stroke-linecap="round"/>
+        <path d="M90,200 C220,200 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.18" stroke-linecap="round"/>
+        <path d="M90,200 C220,200 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.27" stroke-linecap="round"/>
+        <path d="M90,200 C220,200 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.19" stroke-linecap="round"/>
+        <path d="M55,250 C185,250 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.12" stroke-linecap="round"/>
+        <path d="M55,250 C185,250 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.22" stroke-linecap="round"/>
+        <path d="M55,250 C185,250 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.25" stroke-linecap="round"/>
+        <path d="M85,300 C215,300 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.07" stroke-linecap="round"/>
+        <path d="M85,300 C215,300 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.16" stroke-linecap="round"/>
+        <path d="M85,300 C215,300 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.26" stroke-linecap="round"/>
+        <path d="M110,90 C240,90 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.26" stroke-linecap="round"/>
+        <path d="M110,90 C240,90 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.16" stroke-linecap="round"/>
+        <path d="M110,90 C240,90 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.07" stroke-linecap="round"/>
+        <path d="M115,250 C245,250 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.12" stroke-linecap="round"/>
+        <path d="M115,250 C245,250 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.22" stroke-linecap="round"/>
+        <path d="M115,250 C245,250 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.25" stroke-linecap="round"/>
+        <path d="M60,340 C190,340 250,110 340,110" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.06" stroke-linecap="round"/>
+        <path d="M60,340 C190,340 250,195 340,195" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.12" stroke-linecap="round"/>
+        <path d="M60,340 C190,340 250,280 340,280" fill="none" stroke="currentColor" stroke-width="0.6" opacity="0.21" stroke-linecap="round"/>
+
+        <path d="M340,110 C440,110 460,195 560,195" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.6" stroke-linecap="round"/>
+        <path d="M340,195 C440,195 460,195 560,195" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.6" stroke-linecap="round"/>
+        <path d="M340,280 C440,280 460,195 560,195" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.6" stroke-linecap="round"/>
+
+        <circle cx="50" cy="60" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="80" cy="120" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="50" cy="180" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="90" cy="200" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="55" cy="250" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="85" cy="300" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="110" cy="90" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="115" cy="250" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="60" cy="340" r="3" fill="currentColor" opacity="0.55"/>
+        <circle cx="340" cy="110" r="5" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.8"/>
+        <circle cx="340" cy="195" r="5" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.8"/>
+        <circle cx="340" cy="280" r="5" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.8"/>
+
+        <path d="M560,179 Q565,190 576,195 Q565,200 560,211 Q555,200 544,195 Q555,190 560,179 Z" fill="currentColor" opacity="0.85"/>
+      </symbol>
+
+      <!-- 03: four differently-styled method paths converging on one decision -->
+      <symbol id="how-3e8-visual-methods" viewBox="0 0 640 380">
+        <path d="M40,60 C260,60 380,200 580,200" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55" stroke-linecap="round"/>
+        <path d="M40,155 C260,155 380,200 580,200" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55" stroke-dasharray="7,5" stroke-linecap="round"/>
+        <path d="M40,250 C260,250 380,200 580,200" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55" stroke-dasharray="1.5,5" stroke-linecap="round"/>
+        <path d="M40,340 C260,340 380,200 580,200" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.55" stroke-dasharray="9,3,2,3" stroke-linecap="round"/>
+
+        <circle cx="40" cy="60" r="6" fill="currentColor" opacity="0.8"/>
+        <rect x="34" y="149" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.8"/>
+        <path d="M40,242 L47,254 L33,254 Z" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.8" stroke-linejoin="round"/>
+        <rect x="34" y="334" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" opacity="0.8" transform="rotate(45 40 340)"/>
+
+        <circle cx="580" cy="200" r="15" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.5"/>
+        <circle cx="580" cy="200" r="9" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.65"/>
+        <circle cx="580" cy="200" r="3.5" fill="currentColor" opacity="0.9"/>
       </symbol>
     </defs>
   </svg>
@@ -364,7 +285,7 @@
         </div>
       </div>
       <svg class="how-3e8__art" viewBox="0 0 640 380" aria-hidden="true">
-        <use href="#how-3e8-flow"></use>
+        <use href="#how-3e8-visual-expert"></use>
       </svg>
     </div>
 
@@ -392,7 +313,7 @@
         </div>
       </div>
       <svg class="how-3e8__art" viewBox="0 0 640 380" aria-hidden="true">
-        <use href="#how-3e8-flow"></use>
+        <use href="#how-3e8-visual-agents"></use>
       </svg>
     </div>
 
@@ -415,8 +336,8 @@
           <p>Go deep where depth matters. Scale where scale matters.</p>
         </div>
       </div>
-      <svg class="how-3e8__art how-3e8__art--flip" viewBox="0 0 640 380" aria-hidden="true">
-        <use href="#how-3e8-flow"></use>
+      <svg class="how-3e8__art" viewBox="0 0 640 380" aria-hidden="true">
+        <use href="#how-3e8-visual-methods"></use>
       </svg>
     </div>
   </div>
