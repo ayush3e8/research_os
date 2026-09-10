@@ -393,6 +393,10 @@
     overflow: visible;
   }
 
+  .how__row--reverse .how__art {
+    order: -1;
+  }
+
   @media (max-width: 860px) {
     .how__row { grid-template-columns: 1fr; }
     .how__art { order: -1; max-height: 220px; }
@@ -744,7 +748,7 @@
           </svg>
         </div>
 
-        <div class="how__row reveal">
+        <div class="how__row how__row--reverse reveal">
           <div>
             <p class="how__num">02 /</p>
             <h3 class="how__heading">Made Efficient Through Agentic Workflows</h3>
