@@ -13,7 +13,13 @@
     --cta-bg: #141414;
     --cta-ink: #ffffff;
     --input-bg: #f0efe9;
+    --dot: rgb(20 20 20 / 0.14);
+    --blob-a: rgb(120 140 130 / 0.20);
+    --blob-b: rgb(150 130 110 / 0.18);
 
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
     background: var(--bg);
     color: var(--ink);
     font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
@@ -30,6 +36,9 @@
       --cta-bg: #f2f1ee;
       --cta-ink: #141414;
       --input-bg: #1c1c1f;
+      --dot: rgb(255 255 255 / 0.10);
+      --blob-a: rgb(90 130 150 / 0.16);
+      --blob-b: rgb(140 110 150 / 0.14);
     }
   }
   .hero-3e8[data-theme="dark"] {
@@ -40,9 +49,63 @@
     --cta-bg: #f2f1ee;
     --cta-ink: #141414;
     --input-bg: #1c1c1f;
+    --dot: rgb(255 255 255 / 0.10);
+    --blob-a: rgb(90 130 150 / 0.16);
+    --blob-b: rgb(140 110 150 / 0.14);
+  }
+
+  .hero-3e8__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 40%, transparent 90%);
+  }
+
+  .hero-3e8__blob {
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+    width: 46vw;
+    height: 46vw;
+    max-width: 560px;
+    max-height: 560px;
+    border-radius: 50%;
+    filter: blur(70px);
+    animation: hero-3e8-drift 26s ease-in-out infinite alternate;
+  }
+
+  .hero-3e8__blob--a {
+    top: -12%;
+    left: -8%;
+    background: var(--blob-a);
+  }
+
+  .hero-3e8__blob--b {
+    bottom: -18%;
+    right: -8%;
+    background: var(--blob-b);
+    animation-duration: 32s;
+    animation-delay: -6s;
+  }
+
+  @keyframes hero-3e8-drift {
+    0%   { transform: translate(0, 0) scale(1); }
+    50%  { transform: translate(4%, 5%) scale(1.08); }
+    100% { transform: translate(-3%, -4%) scale(0.96); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-3e8__blob {
+      animation: none;
+    }
   }
 
   .hero-3e8__inner {
+    position: relative;
+    z-index: 1;
     max-width: 760px;
     margin: 0 auto;
   }
@@ -138,6 +201,9 @@
 </style>
 
 <section class="hero-3e8">
+  <div class="hero-3e8__bg" aria-hidden="true"></div>
+  <div class="hero-3e8__blob hero-3e8__blob--a" aria-hidden="true"></div>
+  <div class="hero-3e8__blob hero-3e8__blob--b" aria-hidden="true"></div>
   <div class="hero-3e8__inner">
     <p class="hero-3e8__eyebrow"># The AI-native firm for market research</p>
     <h1 class="hero-3e8__headline">Agentic market research</h1>
