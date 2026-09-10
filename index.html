@@ -14,7 +14,6 @@
     --border: #e4e2dc;
     --cta-bg: #141414;
     --cta-ink: #ffffff;
-    --input-bg: #f0efe9;
     --card-bg: #ffffff;
     --dot: rgb(20 20 20 / 0.14);
     --blob-a: rgb(120 140 130 / 0.20);
@@ -33,7 +32,6 @@
       --border: #2a2a2d;
       --cta-bg: #f2f1ee;
       --cta-ink: #141414;
-      --input-bg: #1c1c1f;
       --card-bg: #17171a;
       --dot: rgb(255 255 255 / 0.10);
       --blob-a: rgb(90 130 150 / 0.16);
@@ -48,7 +46,6 @@
     --border: #2a2a2d;
     --cta-bg: #f2f1ee;
     --cta-ink: #141414;
-    --input-bg: #1c1c1f;
     --card-bg: #17171a;
     --dot: rgb(255 255 255 / 0.10);
     --blob-a: rgb(90 130 150 / 0.16);
@@ -272,8 +269,8 @@
     font-family: inherit;
     font-weight: 700;
     letter-spacing: -0.02em;
-    line-height: 1.05;
-    font-size: clamp(38px, 6.5vw, 76px);
+    line-height: 1.12;
+    font-size: clamp(28px, 4.6vw, 54px);
     margin: 0 0 28px;
   }
 
@@ -286,123 +283,46 @@
     margin: 0 auto clamp(32px, 5vw, 44px);
   }
 
-  .hero__cta {
-    display: flex;
+  .hero__cta-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 0;
-    max-width: 480px;
-    margin: 0 auto;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 6px;
-  }
-  .hero__cta input {
-    flex: 1;
-    min-width: 0;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--ink);
-    padding: 12px 14px;
-  }
-  .hero__cta input::placeholder { color: var(--muted); }
-  .hero__cta button {
+    gap: 8px;
     font-family: var(--mono);
     font-weight: 700;
-    font-size: 13px;
+    font-size: 14px;
     letter-spacing: 0.02em;
     text-transform: uppercase;
+    text-decoration: none;
     white-space: nowrap;
     background: var(--cta-bg);
     color: var(--cta-ink);
     border: none;
-    border-radius: 6px;
-    padding: 12px 20px;
+    border-radius: 8px;
+    padding: 15px 28px;
     cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .hero__cta-btn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
   }
 
-  @media (max-width: 420px) {
-    .hero__cta { flex-direction: column; background: transparent; border: none; padding: 0; gap: 10px; }
-    .hero__cta input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; }
-    .hero__cta button { width: 100%; }
+  /* ===================== Shared section header ===================== */
+  .section-header {
+    max-width: 720px;
+    margin: 0 auto clamp(56px, 8vw, 96px);
+    text-align: center;
   }
 
-  /* ===================== Use cases ===================== */
-  .usecases {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: var(--mono);
-    border-top: 1px solid var(--border);
-  }
-
-  .usecases__body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: clamp(24px, 6vw, 72px);
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: clamp(64px, 9vw, 112px) clamp(20px, 4vw, 48px);
-    min-height: 500px;
-  }
-
-  .usecases__label {
+  .section-intro {
     font-family: var(--sans);
-    font-size: clamp(18px, 2.4vw, 24px);
+    font-size: clamp(16px, 1.8vw, 18px);
+    line-height: 1.65;
     color: var(--muted);
-    white-space: nowrap;
-    flex-shrink: 0;
+    margin: 0 0 16px;
   }
-
-  .usecases__window {
-    position: relative;
-    overflow: hidden;
-    height: 460px;
-    flex: 1;
-    min-width: 0;
-    mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.18) 14%, rgb(0 0 0 / 0.55) 30%, rgb(0 0 0 / 0.9) 42%, #000 50%, rgb(0 0 0 / 0.9) 58%, rgb(0 0 0 / 0.55) 70%, rgb(0 0 0 / 0.18) 86%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.18) 14%, rgb(0 0 0 / 0.55) 30%, rgb(0 0 0 / 0.9) 42%, #000 50%, rgb(0 0 0 / 0.9) 58%, rgb(0 0 0 / 0.55) 70%, rgb(0 0 0 / 0.18) 86%, transparent 100%);
-  }
-
-  .usecases__track {
-    display: flex;
-    flex-direction: column;
-    animation: usecases-scroll 22s linear infinite;
-  }
-  .usecases__window:hover .usecases__track { animation-play-state: paused; }
-
-  .usecases__item {
-    font-family: var(--sans);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    font-size: clamp(28px, 4vw, 46px);
-    line-height: 1.02;
-    color: var(--muted);
-    padding: 4px 0;
-    margin: 0;
-    white-space: nowrap;
-    transition: color 0.2s ease;
-  }
-  .usecases__item--active { color: var(--ink); }
-
-  @keyframes usecases-scroll {
-    0%   { transform: translateY(0); }
-    100% { transform: translateY(-50%); }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .usecases__track { animation: none; }
-    .usecases__window { mask-image: none; -webkit-mask-image: none; }
-  }
-
-  @media (max-width: 640px) {
-    .usecases__body { flex-direction: column; align-items: flex-start; min-height: 0; }
-    .usecases__window { height: 340px; width: 100%; }
-    .usecases__item { white-space: normal; }
-  }
+  .section-intro:last-child { margin-bottom: 0; }
+  .section-intro strong { color: var(--ink); font-weight: 700; }
 
   /* ===================== How we work ===================== */
   .how {
@@ -415,12 +335,6 @@
     max-width: 1180px;
     margin: 0 auto;
     padding: clamp(64px, 9vw, 128px) clamp(20px, 4vw, 48px);
-  }
-
-  .how__intro {
-    max-width: 720px;
-    margin: 0 auto clamp(56px, 8vw, 96px);
-    text-align: center;
   }
 
   .eyebrow {
@@ -440,14 +354,6 @@
     line-height: 1.1;
     font-size: clamp(30px, 4vw, 44px);
     margin: 0 0 20px;
-  }
-
-  .how__intro-copy {
-    font-family: var(--sans);
-    font-size: clamp(16px, 1.8vw, 18px);
-    line-height: 1.65;
-    color: var(--muted);
-    margin: 0;
   }
 
   .how__row {
@@ -506,26 +412,20 @@
     border-top: 1px solid var(--border);
   }
 
-  .story__body {
-    display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-    gap: clamp(40px, 6vw, 96px);
+  .story__inner {
     max-width: 1180px;
     margin: 0 auto;
     padding: clamp(64px, 9vw, 128px) clamp(20px, 4vw, 48px);
   }
 
-  @media (max-width: 860px) {
-    .story__body { grid-template-columns: 1fr; }
+  .story__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: clamp(40px, 6vw, 96px);
   }
 
-  .story__headline {
-    font-family: var(--sans);
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    line-height: 1.12;
-    font-size: clamp(30px, 4vw, 44px);
-    margin: 0 0 28px;
+  @media (max-width: 860px) {
+    .story__body { grid-template-columns: 1fr; }
   }
 
   .story__copy {
@@ -572,18 +472,7 @@
     padding: clamp(64px, 9vw, 128px) clamp(20px, 4vw, 48px);
   }
 
-  .careers__intro p {
-    font-family: var(--sans);
-    font-size: clamp(16px, 1.8vw, 18px);
-    line-height: 1.65;
-    color: var(--muted);
-    margin: 0 0 16px;
-  }
-  .careers__intro p:last-child { margin-bottom: 0; }
-  .careers__intro strong { color: var(--ink); font-weight: 700; }
-
   .careers__roles {
-    margin-top: clamp(48px, 7vw, 72px);
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -682,50 +571,6 @@
     margin: 0 auto 36px;
   }
 
-  .final-cta__form {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    max-width: 460px;
-    margin: 0 auto;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 6px;
-  }
-  .final-cta__form input {
-    flex: 1;
-    min-width: 0;
-    background: transparent;
-    border: none;
-    outline: none;
-    font-family: var(--mono);
-    font-size: 14px;
-    color: var(--ink);
-    padding: 12px 14px;
-  }
-  .final-cta__form input::placeholder { color: var(--muted); }
-  .final-cta__form button {
-    font-family: var(--mono);
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    background: var(--cta-bg);
-    color: var(--cta-ink);
-    border: none;
-    border-radius: 6px;
-    padding: 12px 20px;
-    cursor: pointer;
-  }
-
-  @media (max-width: 420px) {
-    .final-cta__form { flex-direction: column; background: transparent; border: none; padding: 0; gap: 10px; }
-    .final-cta__form input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; }
-    .final-cta__form button { width: 100%; }
-  }
-
   /* ===================== Footer ===================== */
   .site-footer {
     background: var(--bg);
@@ -806,8 +651,6 @@
 <noscript>
   <style>
     .reveal { opacity: 1 !important; transform: none !important; }
-    .usecases__window { mask-image: none !important; -webkit-mask-image: none !important; }
-    .usecases__track { animation: none !important; }
   </style>
 </noscript>
 </head>
@@ -818,13 +661,12 @@
     <nav class="site-nav">
       <a class="site-nav__logo" href="#top">3e8</a>
       <ul class="site-nav__links">
-        <li><a href="#use-cases">Use Cases</a></li>
         <li><a href="#how-we-work">How We Work</a></li>
         <li><a href="#story">Our Story</a></li>
         <li><a href="#careers">Careers</a></li>
       </ul>
       <div class="site-nav__right">
-        <a class="cta-pill" href="#top">Request access</a>
+        <a class="cta-pill" href="mailto:hello@3e8.ai">Contact Us</a>
         <button class="site-nav__menu-btn" type="button" aria-label="Toggle menu" aria-expanded="false" id="nav-menu-btn">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -833,7 +675,6 @@
       </div>
     </nav>
     <div class="site-nav__mobile" id="nav-mobile">
-      <a href="#use-cases">Use Cases</a>
       <a href="#how-we-work">How We Work</a>
       <a href="#story">Our Story</a>
       <a href="#careers">Careers</a>
@@ -848,48 +689,16 @@
       <div class="hero__blob hero__blob--b" aria-hidden="true"></div>
       <div class="hero__inner">
         <p class="hero__eyebrow reveal"># The AI-native firm for market research</p>
-        <h1 class="hero__headline reveal">Agentic market research</h1>
+        <h1 class="hero__headline reveal">
+          Life Sciences<br />
+          Market Research<br />
+          Rebuilt around AI.
+        </h1>
         <p class="hero__subhead reveal">
           3e8 delivers market research using an AI-native model, enabling richer
           insights that arrive in days, not weeks.
         </p>
-        <form class="hero__cta reveal">
-          <input type="email" placeholder="Work email…" required />
-          <button type="submit">Request access →</button>
-        </form>
-      </div>
-    </section>
-
-    <!-- ===================== Use cases ===================== -->
-    <section class="usecases" id="use-cases">
-      <div class="usecases__body">
-        <p class="usecases__label reveal">3e8 helps life sciences companies with</p>
-
-        <div class="usecases__window reveal">
-          <div class="usecases__track">
-            <p class="usecases__item">Deal Assessments</p>
-            <p class="usecases__item">TPP Testing</p>
-            <p class="usecases__item">Demand Estimation</p>
-            <p class="usecases__item">Segmentation</p>
-            <p class="usecases__item">Patient Journey</p>
-            <p class="usecases__item">Pricing Research</p>
-            <p class="usecases__item">Concept &amp; Message Testing</p>
-            <p class="usecases__item">ATU Studies</p>
-            <p class="usecases__item">Patient Chart Audits</p>
-            <p class="usecases__item">Issue-Based Research</p>
-            <!-- duplicated for a seamless loop -->
-            <p class="usecases__item" aria-hidden="true">Deal Assessments</p>
-            <p class="usecases__item" aria-hidden="true">TPP Testing</p>
-            <p class="usecases__item" aria-hidden="true">Demand Estimation</p>
-            <p class="usecases__item" aria-hidden="true">Segmentation</p>
-            <p class="usecases__item" aria-hidden="true">Patient Journey</p>
-            <p class="usecases__item" aria-hidden="true">Pricing Research</p>
-            <p class="usecases__item" aria-hidden="true">Concept &amp; Message Testing</p>
-            <p class="usecases__item" aria-hidden="true">ATU Studies</p>
-            <p class="usecases__item" aria-hidden="true">Patient Chart Audits</p>
-            <p class="usecases__item" aria-hidden="true">Issue-Based Research</p>
-          </div>
-        </div>
+        <a class="hero__cta-btn reveal" href="mailto:hello@3e8.ai">Contact Us →</a>
       </div>
     </section>
 
@@ -993,10 +802,10 @@
       </svg>
 
       <div class="how__inner">
-        <div class="how__intro reveal">
+        <div class="section-header reveal">
           <p class="eyebrow">Our Approach</p>
           <h2 class="section-title">How We Work</h2>
-          <p class="how__intro-copy">
+          <p class="section-intro">
             We're an AI-native life sciences market research firm built around a
             different engagement model: senior experts lead the work directly,
             while AI agents give them the execution capacity of a much larger
@@ -1086,43 +895,48 @@
 
     <!-- ===================== Story ===================== -->
     <section class="story" id="story">
-      <div class="story__body">
-        <div class="reveal">
+      <div class="story__inner">
+        <div class="section-header reveal">
           <p class="eyebrow">Our Story</p>
-          <h2 class="story__headline">
+          <h2 class="section-title">
             We spent 15 years running market research for the world's top biopharma companies.
           </h2>
-          <p class="story__copy">
-            And every time, the same constraint showed up. Studies that should
-            take days took weeks. Insights arrived after the decision had
-            already been made. Not because the teams didn't care, but because
-            traditional market research was never built to move at the speed
-            biopharma actually needs.
-          </p>
-          <p class="story__copy">
-            AI breaks that constraint. So we built an AI-native market research
-            firm from the ground up — designed to give biopharma teams richer
-            insights, faster, without sacrificing the rigor a launch or pipeline
-            decision demands.
-          </p>
         </div>
 
-        <div class="story__stats reveal">
-          <p class="eyebrow">Track Record</p>
-
-          <div class="story__stat">
-            <p class="story__stat-value">15+ Years</p>
-            <p class="story__stat-label">Combined biopharma market research &amp; commercial strategy experience on our team</p>
+        <div class="story__body">
+          <div class="reveal">
+            <p class="story__copy">
+              And every time, the same constraint showed up. Studies that should
+              take days took weeks. Insights arrived after the decision had
+              already been made. Not because the teams didn't care, but because
+              traditional market research was never built to move at the speed
+              biopharma actually needs.
+            </p>
+            <p class="story__copy">
+              AI breaks that constraint. So we built an AI-native market research
+              firm from the ground up — designed to give biopharma teams richer
+              insights, faster, without sacrificing the rigor a launch or pipeline
+              decision demands.
+            </p>
           </div>
 
-          <div class="story__stat">
-            <p class="story__stat-value">10 of Top 20</p>
-            <p class="story__stat-label">Global biopharma companies advised by our team</p>
-          </div>
+          <div class="story__stats reveal">
+            <p class="eyebrow">Track Record</p>
 
-          <div class="story__stat">
-            <p class="story__stat-value">300+ Projects</p>
-            <p class="story__stat-label">Market research &amp; commercial strategy projects executed across the full biopharma arc</p>
+            <div class="story__stat">
+              <p class="story__stat-value">15+ Years</p>
+              <p class="story__stat-label">Combined biopharma market research &amp; commercial strategy experience on our team</p>
+            </div>
+
+            <div class="story__stat">
+              <p class="story__stat-value">10 of Top 20</p>
+              <p class="story__stat-label">Global biopharma companies advised by our team</p>
+            </div>
+
+            <div class="story__stat">
+              <p class="story__stat-value">300+ Projects</p>
+              <p class="story__stat-label">Market research &amp; commercial strategy projects executed across the full biopharma arc</p>
+            </div>
           </div>
         </div>
       </div>
@@ -1131,17 +945,16 @@
     <!-- ===================== Careers ===================== -->
     <section class="careers" id="careers">
       <div class="careers__inner">
-        <p class="eyebrow reveal">Careers</p>
-        <h1 class="section-title reveal">Build a different kind of research firm</h1>
-
-        <div class="careers__intro reveal">
-          <p>
+        <div class="section-header reveal">
+          <p class="eyebrow">Careers</p>
+          <h1 class="section-title">Build a different kind of research firm</h1>
+          <p class="section-intro">
             We're not running the traditional market research playbook, and
             we're not hiring for it. We're looking for senior experts who can
             lead and drive outcomes on engagements directly, and engineers
             across every level who can build.
           </p>
-          <p>
+          <p class="section-intro">
             <strong>A passion for building with AI, and using it to work at
             maximum efficiency, is non-negotiable</strong> — it's the baseline
             for how everyone here operates, not a nice-to-have.
@@ -1192,14 +1005,11 @@
 
     <!-- ===================== Final CTA ===================== -->
     <section class="final-cta">
-      <h2 class="final-cta__title reveal">See agentic market research in action</h2>
+      <h2 class="final-cta__title reveal">See how agentic market research works for your team</h2>
       <p class="final-cta__sub reveal">
-        Tell us a bit about your team and we'll be in touch about early access.
+        Tell us a bit about what you're working on and we'll be in touch.
       </p>
-      <form class="final-cta__form reveal">
-        <input type="email" placeholder="Work email…" required />
-        <button type="submit">Request access →</button>
-      </form>
+      <a class="hero__cta-btn reveal" href="mailto:hello@3e8.ai">Contact Us →</a>
     </section>
   </main>
 
@@ -1216,7 +1026,6 @@
       <div>
         <p class="site-footer__heading">Explore</p>
         <ul class="site-footer__links">
-          <li><a href="#use-cases">Use Cases</a></li>
           <li><a href="#how-we-work">How We Work</a></li>
           <li><a href="#story">Our Story</a></li>
           <li><a href="#careers">Careers</a></li>
@@ -1254,40 +1063,6 @@
           });
         });
       }
-
-      // Use-cases marquee: bold/darken whichever item sits nearest center
-      document.querySelectorAll(".usecases__window").forEach(function (win) {
-        var track = win.querySelector(".usecases__track");
-        if (!track) return;
-        var items = Array.prototype.slice.call(track.querySelectorAll(".usecases__item"));
-        var active = null;
-
-        function tick() {
-          var winRect = win.getBoundingClientRect();
-          var centerY = winRect.top + winRect.height / 2;
-          var closest = null;
-          var closestDist = Infinity;
-
-          items.forEach(function (item) {
-            var r = item.getBoundingClientRect();
-            var dist = Math.abs(r.top + r.height / 2 - centerY);
-            if (dist < closestDist) {
-              closestDist = dist;
-              closest = item;
-            }
-          });
-
-          if (closest !== active) {
-            if (active) active.classList.remove("usecases__item--active");
-            if (closest) closest.classList.add("usecases__item--active");
-            active = closest;
-          }
-
-          requestAnimationFrame(tick);
-        }
-
-        requestAnimationFrame(tick);
-      });
 
       // Reveal-on-scroll
       var revealEls = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
