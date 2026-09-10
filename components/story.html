@@ -1,0 +1,218 @@
+<!--
+  3e8 — "Our Story" section component
+  Standalone, dependency-free markup + styles, sharing the mono type system
+  and color tokens from components/hero.html. Drop the <section class="story-3e8">
+  block into any page and keep the <style> block (or move its rules into your
+  own stylesheet) — scoped under .story-3e8 so it won't leak into surrounding UI.
+-->
+<style>
+  .story-3e8 {
+    --bg: #fafaf8;
+    --ink: #141414;
+    --muted: #6b6f76;
+    --border: #e4e2dc;
+    --cta-bg: #141414;
+    --cta-ink: #ffffff;
+
+    background: var(--bg);
+    color: var(--ink);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .story-3e8:not([data-theme="light"]) {
+      --bg: #111113;
+      --ink: #f2f1ee;
+      --muted: #9a9da3;
+      --border: #2a2a2d;
+      --cta-bg: #f2f1ee;
+      --cta-ink: #141414;
+    }
+  }
+  .story-3e8[data-theme="dark"] {
+    --bg: #111113;
+    --ink: #f2f1ee;
+    --muted: #9a9da3;
+    --border: #2a2a2d;
+    --cta-bg: #f2f1ee;
+    --cta-ink: #141414;
+  }
+
+  /* Nav */
+  .story-3e8__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px clamp(20px, 4vw, 48px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .story-3e8__logo {
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+
+  .story-3e8__links {
+    display: flex;
+    gap: clamp(18px, 3vw, 36px);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .story-3e8__links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 14px;
+  }
+
+  .story-3e8__links a:hover {
+    color: var(--ink);
+  }
+
+  .story-3e8__cta-btn {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    background: var(--cta-bg);
+    color: var(--cta-ink);
+    border: none;
+    border-radius: 999px;
+    padding: 12px 22px;
+    cursor: pointer;
+  }
+
+  @media (max-width: 720px) {
+    .story-3e8__links {
+      display: none;
+    }
+  }
+
+  /* Content */
+  .story-3e8__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: clamp(40px, 6vw, 96px);
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(48px, 8vw, 96px) clamp(20px, 4vw, 48px);
+  }
+
+  @media (max-width: 860px) {
+    .story-3e8__body {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .story-3e8__eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 20px;
+  }
+
+  .story-3e8__headline {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    font-size: clamp(30px, 4vw, 44px);
+    margin: 0 0 28px;
+  }
+
+  .story-3e8__copy {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin: 0 0 20px;
+    max-width: 56ch;
+  }
+
+  /* Track record */
+  .story-3e8__stats {
+    padding-top: 4px;
+  }
+
+  .story-3e8__stat {
+    border-top: 1px solid var(--border);
+    padding: 24px 0;
+  }
+
+  .story-3e8__stat:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .story-3e8__stat-value {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 600;
+    font-size: clamp(32px, 4vw, 44px);
+    line-height: 1.1;
+    margin: 0 0 8px;
+  }
+
+  .story-3e8__stat-label {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    color: var(--muted);
+  }
+</style>
+
+<section class="story-3e8">
+  <nav class="story-3e8__nav">
+    <span class="story-3e8__logo">3e8</span>
+    <ul class="story-3e8__links">
+      <li><a href="#technology">Our Technology</a></li>
+      <li><a href="#careers">Careers</a></li>
+      <li><a href="#insights">Insights</a></li>
+    </ul>
+    <button class="story-3e8__cta-btn" type="button">Speak with an Advisor</button>
+  </nav>
+
+  <div class="story-3e8__body">
+    <div>
+      <p class="story-3e8__eyebrow">Our Story</p>
+      <h1 class="story-3e8__headline">
+        We spent 15 years running market research for the world's top biopharma companies.
+      </h1>
+      <p class="story-3e8__copy">
+        And every time, the same constraint showed up. Studies that should
+        take days took weeks. Insights arrived after the decision had
+        already been made. Not because the teams didn't care, but because
+        traditional market research was never built to move at the speed
+        biopharma actually needs.
+      </p>
+      <p class="story-3e8__copy">
+        AI breaks that constraint. So we built an AI-native market research
+        firm from the ground up — designed to give biopharma teams richer
+        insights, faster, without sacrificing the rigor a launch or pipeline
+        decision demands.
+      </p>
+    </div>
+
+    <div class="story-3e8__stats">
+      <p class="story-3e8__eyebrow">Track Record</p>
+
+      <div class="story-3e8__stat">
+        <p class="story-3e8__stat-value">15+ Years</p>
+        <p class="story-3e8__stat-label">Combined biopharma market research &amp; commercial strategy experience on our team</p>
+      </div>
+
+      <div class="story-3e8__stat">
+        <p class="story-3e8__stat-value">10 of Top 20</p>
+        <p class="story-3e8__stat-label">Global biopharma companies advised by our team</p>
+      </div>
+
+      <div class="story-3e8__stat">
+        <p class="story-3e8__stat-value">300+ Projects</p>
+        <p class="story-3e8__stat-label">Market research &amp; commercial strategy projects executed across the full biopharma arc</p>
+      </div>
+    </div>
+  </div>
+</section>
