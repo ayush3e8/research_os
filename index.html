@@ -41,7 +41,7 @@
       --blob-b: rgb(140 110 150 / 0.14);
     }
   }
-  :root[data-theme="dark"] {
+  [data-theme="dark"] {
     --bg: #111113;
     --bg-raised: #17171a;
     --ink: #f2f1ee;
@@ -459,7 +459,7 @@
   /* ===================== Final CTA ===================== */
   .final-cta {
     background: var(--bg);
-    border-top: 1px solid var(--border);
+    color: var(--ink);
     padding: clamp(64px, 10vw, 128px) clamp(20px, 4vw, 48px);
     text-align: center;
   }
@@ -484,7 +484,7 @@
   /* ===================== Footer ===================== */
   .site-footer {
     background: var(--bg);
-    border-top: 1px solid var(--border);
+    color: var(--ink);
     padding: clamp(48px, 7vw, 72px) clamp(20px, 4vw, 48px) 32px;
   }
 
@@ -873,7 +873,7 @@
     </section>
 
     <!-- ===================== Final CTA ===================== -->
-    <section class="final-cta">
+    <section class="final-cta" data-theme="dark">
       <h2 class="final-cta__title reveal">Explore how an AI-native delivery model can help your team generate deeper insights, faster</h2>
       <p class="final-cta__sub reveal">
         Tell us a bit about what you're working on and we'll be in touch.
@@ -883,7 +883,7 @@
   </main>
 
   <!-- ===================== Footer ===================== -->
-  <footer class="site-footer">
+  <footer class="site-footer" data-theme="dark">
     <div class="site-footer__grid">
       <div>
         <p class="site-footer__brand">3e8</p>

@@ -35,7 +35,7 @@
       --card-bg: #17171a;
     }
   }
-  :root[data-theme="dark"] {
+  [data-theme="dark"] {
     --bg: #111113;
     --bg-raised: #17171a;
     --ink: #f2f1ee;
@@ -327,7 +327,7 @@
   /* ===================== Footer ===================== */
   .site-footer {
     background: var(--bg);
-    border-top: 1px solid var(--border);
+    color: var(--ink);
     padding: clamp(48px, 7vw, 72px) clamp(20px, 4vw, 48px) 32px;
   }
 
@@ -516,7 +516,7 @@
   </main>
 
   <!-- ===================== Footer ===================== -->
-  <footer class="site-footer">
+  <footer class="site-footer" data-theme="dark">
     <div class="site-footer__grid">
       <div>
         <p class="site-footer__brand">3e8</p>
