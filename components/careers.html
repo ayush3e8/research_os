@@ -1,0 +1,260 @@
+<!--
+  3e8 — Careers page component
+  Standalone, dependency-free markup + styles, sharing the mono type system
+  and color tokens from components/hero.html. Drop the <section class="careers-3e8">
+  block into any page and keep the <style> block (or move its rules into your
+  own stylesheet) — scoped under .careers-3e8 so it won't leak into surrounding UI.
+
+  Two open roles, each a bordered card with a level/experience meta line,
+  a description, and a "Submit Interest" CTA (mailto by default — swap the
+  href for a real application form/ATS link when one exists).
+-->
+<style>
+  .careers-3e8 {
+    --bg: #fafaf8;
+    --ink: #141414;
+    --muted: #6b6f76;
+    --border: #e4e2dc;
+    --cta-bg: #141414;
+    --cta-ink: #ffffff;
+    --card-bg: #ffffff;
+
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .careers-3e8:not([data-theme="light"]) {
+      --bg: #111113;
+      --ink: #f2f1ee;
+      --muted: #9a9da3;
+      --border: #2a2a2d;
+      --cta-bg: #f2f1ee;
+      --cta-ink: #141414;
+      --card-bg: #17171a;
+    }
+  }
+  .careers-3e8[data-theme="dark"] {
+    --bg: #111113;
+    --ink: #f2f1ee;
+    --muted: #9a9da3;
+    --border: #2a2a2d;
+    --cta-bg: #f2f1ee;
+    --cta-ink: #141414;
+    --card-bg: #17171a;
+  }
+
+  /* Nav */
+  .careers-3e8__nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 20px clamp(20px, 4vw, 48px);
+    border-bottom: 1px solid var(--border);
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+  }
+
+  .careers-3e8__logo {
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 0.02em;
+  }
+
+  .careers-3e8__cta-btn {
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    background: var(--cta-bg);
+    color: var(--cta-ink);
+    border: none;
+    border-radius: 999px;
+    padding: 12px 22px;
+    cursor: pointer;
+  }
+
+  /* Intro */
+  .careers-3e8__inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: clamp(56px, 9vw, 120px) clamp(20px, 4vw, 48px);
+  }
+
+  .careers-3e8__eyebrow {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .careers-3e8__title {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+    font-size: clamp(30px, 4vw, 44px);
+    margin: 0 0 24px;
+  }
+
+  .careers-3e8__intro p {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: clamp(16px, 1.8vw, 18px);
+    line-height: 1.65;
+    color: var(--muted);
+    margin: 0 0 16px;
+  }
+
+  .careers-3e8__intro p:last-child {
+    margin-bottom: 0;
+  }
+
+  .careers-3e8__intro strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  /* Job cards */
+  .careers-3e8__roles {
+    margin-top: clamp(48px, 7vw, 72px);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .careers-3e8__card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: clamp(24px, 4vw, 36px);
+  }
+
+  .careers-3e8__card-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .careers-3e8__role {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    font-size: clamp(20px, 2.4vw, 24px);
+    margin: 0;
+  }
+
+  .careers-3e8__meta {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 18px;
+  }
+
+  .careers-3e8__desc {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--muted);
+    margin: 0 0 24px;
+    max-width: 62ch;
+  }
+
+  .careers-3e8__apply {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    text-decoration: none;
+    background: var(--cta-bg);
+    color: var(--cta-ink);
+    border: none;
+    border-radius: 999px;
+    padding: 11px 20px;
+  }
+
+  @media (max-width: 480px) {
+    .careers-3e8__card-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
+
+<section class="careers-3e8">
+  <nav class="careers-3e8__nav">
+    <span class="careers-3e8__logo">3e8</span>
+    <button class="careers-3e8__cta-btn" type="button">Request access</button>
+  </nav>
+
+  <div class="careers-3e8__inner">
+    <p class="careers-3e8__eyebrow">Careers</p>
+    <h1 class="careers-3e8__title">Build a different kind of research firm</h1>
+
+    <div class="careers-3e8__intro">
+      <p>
+        We're not running the traditional market research playbook, and
+        we're not hiring for it. We're looking for senior experts who can
+        lead and drive outcomes on engagements directly, and engineers
+        across every level who can build.
+      </p>
+      <p>
+        <strong>A passion for building with AI, and using it to work at
+        maximum efficiency, is non-negotiable</strong> — it's the baseline
+        for how everyone here operates, not a nice-to-have.
+      </p>
+    </div>
+
+    <div class="careers-3e8__roles">
+      <div class="careers-3e8__card">
+        <div class="careers-3e8__card-head">
+          <h2 class="careers-3e8__role">Principal, Market Research</h2>
+        </div>
+        <p class="careers-3e8__meta">Senior · 12+ Years · Pharma &amp; Biotech Market Research</p>
+        <p class="careers-3e8__desc">
+          You've spent 12+ years leading and driving market research
+          engagements for pharma and biotech clients as an Associate
+          Principal, Principal, or equivalent. At 3e8, you'll own client
+          relationships end to end — scoping studies, shaping research
+          design, working directly with the evidence, and standing behind
+          every recommendation — while agentic workflows give you the
+          execution capacity of a team many times your size.
+        </p>
+        <a class="careers-3e8__apply" href="mailto:careers@3e8.ai?subject=Principal%2C%20Market%20Research">
+          Submit Interest →
+        </a>
+      </div>
+
+      <div class="careers-3e8__card">
+        <div class="careers-3e8__card-head">
+          <h2 class="careers-3e8__role">AI Engineer</h2>
+        </div>
+        <p class="careers-3e8__meta">All Levels · AI &amp; Software Engineering</p>
+        <p class="careers-3e8__desc">
+          You have AI engineering expertise, software engineering
+          experience scaling production applications, or both. At 3e8,
+          you'll build the agentic infrastructure that lets our senior
+          researchers run studies at a fraction of the usual time and cost.
+          We're hiring at every level, from early career to staff — what
+          matters is that you build fast, build well, and want to push AI
+          as far as it can go.
+        </p>
+        <a class="careers-3e8__apply" href="mailto:careers@3e8.ai?subject=AI%20Engineer">
+          Submit Interest →
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
