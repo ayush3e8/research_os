@@ -8,8 +8,8 @@
   The right-hand list auto-scrolls forever (pure CSS, list duplicated once so
   the loop is seamless), fading toward the top/bottom via a mask. A small
   scoped script tracks which item sits nearest the window's vertical center
-  and toggles a bold/dark "active" state on it only, so exactly one item
-  reads bold at any moment as the loop runs.
+  and toggles a darker "active" color on it only, so exactly one item reads
+  at full strength at any moment as the loop runs.
 -->
 <style>
   .usecases-3e8 {
@@ -143,14 +143,13 @@
     font-size: clamp(28px, 4vw, 46px);
     line-height: 1.02;
     color: var(--muted);
-    padding: 0;
+    padding: 4px 0;
     margin: 0;
     white-space: nowrap;
     transition: color 0.2s ease;
   }
 
   .usecases-3e8__item--active {
-    font-weight: 800;
     color: var(--ink);
   }
 
