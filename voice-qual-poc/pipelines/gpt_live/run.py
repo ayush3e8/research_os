@@ -32,7 +32,7 @@ import websockets
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from common.interview_guide import STUDY_TOPIC
+from common.interview_guide import CLOSING_SCRIPT, STUDY_TOPIC
 from common.moderator import next_utterance
 from common.transcript_log import TRANSCRIPTS_DIR, Clock, SessionLog, Turn
 
@@ -45,11 +45,11 @@ SAMPLE_RATE = 24000
 CHUNK_MS = 100
 CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_MS // 1000
 
+
 def log_raw_event(debug_log: Path, direction: str, event: dict) -> None:
     TRANSCRIPTS_DIR.mkdir(exist_ok=True)
     with debug_log.open("a") as f:
         f.write(json.dumps({"t": time.time(), "dir": direction, "event": event}) + "\n")
-
 
 
 class TranscriptBuffer:
@@ -167,6 +167,36 @@ async def run() -> None:
                 out_stream.stop()
                 out_stream.close()
 
+        state = {"last_audio_time": clock.now(), "closing": False}
+
+        async def speak(content: str, delegation_id: str | None, t_ref: float) -> None:
+            """Push a line to be spoken. delegation_id=None speaks proactively,
+            not in response to a session.delegation.created event."""
+            t_reply = clock.now()
+            transcript.append({"role": "moderator", "text": content})
+
+            append_event = {
+                "type": "session.commentary.append",
+                "event_id": f"reply_{int(t_reply * 1000)}",
+                "delegation_id": delegation_id,
+                "content": content,
+            }
+            await ws.send(json.dumps(append_event))
+            log_raw_event(debug_log, "send", append_event)
+            log.add_turn(
+                Turn("moderator", content, t_ref, t_reply, latency_ms=(t_reply - t_ref) * 1000)
+            )
+            print(f"MODERATOR (via Claude): {content}")
+
+            if content.strip() == CLOSING_SCRIPT.strip():
+                state["closing"] = True
+                asyncio.create_task(close_after_speaking())
+
+        async def send_opening() -> None:
+            t0 = clock.now()
+            opening = await asyncio.to_thread(next_utterance, [])
+            await speak(opening, delegation_id=None, t_ref=t0)
+
         async def handle_delegation(delegation_id: str, t_delegated: float) -> None:
             pending = buf.pending_participant_text()
             if pending:
@@ -175,23 +205,21 @@ async def run() -> None:
                 buf.mark_consumed()
 
             reply = await asyncio.to_thread(next_utterance, transcript)
-            t_reply = clock.now()
-            transcript.append({"role": "moderator", "text": reply})
+            await speak(reply, delegation_id=delegation_id, t_ref=t_delegated)
 
-            append_event = {
-                "type": "session.commentary.append",
-                "event_id": f"reply_{int(t_reply * 1000)}",
-                "delegation_id": delegation_id,
-                "content": reply,
-            }
-            await ws.send(json.dumps(append_event))
-            log_raw_event(debug_log, "send", append_event)
-            log.add_turn(
-                Turn("moderator", reply, t_delegated, t_reply, latency_ms=(t_reply - t_delegated) * 1000)
-            )
-            print(f"MODERATOR (via Claude): {reply}")
+        async def close_after_speaking() -> None:
+            # No explicit "finished speaking" event is documented, so wait
+            # until output audio has actually gone quiet for a beat before
+            # hanging up — otherwise we'd cut the closing line off.
+            await asyncio.sleep(1.0)
+            while clock.now() - state["last_audio_time"] < 1.2:
+                await asyncio.sleep(0.3)
+            close_event = {"type": "session.close"}
+            await ws.send(json.dumps(close_event))
+            log_raw_event(debug_log, "send", close_event)
+            print("[closing line delivered — ending session]")
 
-        print("Connecting... say something once the session starts.\n")
+        print("Connecting...\n")
         mic_stream.start()
         playback_task = asyncio.create_task(playback_loop())
 
@@ -202,7 +230,8 @@ async def run() -> None:
                 etype = event.get("type")
 
                 if etype == "session.started":
-                    print("[session started — speak whenever you're ready]")
+                    print("[session started]")
+                    asyncio.create_task(send_opening())
 
                 elif etype == "session.input_transcript.delta":
                     buf.add_input_delta(event.get("delta", ""))
@@ -211,6 +240,7 @@ async def run() -> None:
                     buf.add_output_delta(event.get("delta", ""))
 
                 elif etype == "session.output_audio.delta":
+                    state["last_audio_time"] = clock.now()
                     audio_bytes = base64.b64decode(event["delta"])
                     await audio_out_queue.put(audio_bytes)
 
