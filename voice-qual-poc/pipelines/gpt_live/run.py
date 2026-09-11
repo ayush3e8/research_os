@@ -263,6 +263,11 @@ async def run() -> None:
             mic_stream.close()
             await audio_out_queue.put(None)
             await playback_task
+            # Ground truth of everything actually said, independent of
+            # whether GPT-Live delegated it or spoke on its own judgment —
+            # the structured `turns` list above only captures the former.
+            log.meta["raw_participant_transcript"] = buf.participant_text
+            log.meta["raw_moderator_transcript"] = buf.moderator_text
             path = log.save()
             print(f"\nSession saved to {path}")
 
