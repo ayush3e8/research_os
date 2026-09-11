@@ -397,7 +397,7 @@
 
   .how__card {
     perspective: 1400px;
-    height: 520px;
+    height: 560px;
     cursor: pointer;
   }
 
@@ -443,7 +443,7 @@
   }
 
   .how__card-face--front {
-    justify-content: space-between;
+    justify-content: flex-start;
   }
 
   .how__card-face--back {
@@ -479,7 +479,7 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--muted);
-    margin: 0;
+    margin: auto 0 0;
   }
 
   .how__card-back-heading {
@@ -492,19 +492,19 @@
   .how__card-face--back p {
     font-family: var(--sans);
     font-size: 14px;
-    line-height: 1.65;
+    line-height: 1.6;
     color: var(--muted);
-    margin: 0 0 12px;
+    margin: 0 0 11px;
   }
   .how__card-face--back p:last-child { margin-bottom: 0; }
 
   @media (max-width: 1180px) {
     .how__cards { grid-template-columns: 1fr; }
-    .how__card { width: 100%; max-width: 480px; height: clamp(480px, 140vw, 580px); margin: 0 auto; }
+    .how__card { width: 100%; max-width: 480px; height: 620px; margin: 0 auto; }
   }
 
   @media (max-width: 400px) {
-    .how__card { height: 620px; }
+    .how__card { height: 660px; }
   }
 
   /* ===================== Story ===================== */
@@ -852,49 +852,48 @@
                 <h4 class="how__card-back-heading">Made Efficient Through Agentic Workflows</h4>
                 <p>
                   AI agents execute and iterate across the research workflow
-                  — building context, developing design materials,
+                  — building context, developing research materials,
                   coordinating fieldwork, analyzing data, testing
                   hypotheses, and synthesizing findings.
                 </p>
                 <p>
                   Our experts direct those workflows, challenging what
-                  emerges, and applying the judgment needed to distinguish
-                  an interesting pattern from an insight that should drive a
+                  emerges and applying the judgment needed to separate an
+                  interesting pattern from an insight that should drive a
                   decision.
                 </p>
                 <p>
-                  The result is senior-led research amplified by AI: greater
-                  depth, more iteration, and faster execution.
+                  Your team gets greater depth, more iteration, and faster
+                  execution without sacrificing senior judgment.
                 </p>
               </div>
             </div>
           </div>
 
-          <div class="how__card reveal" tabindex="0" role="button" aria-expanded="false" aria-label="Fielded Through the Method the Question Demands — flip for details">
+          <div class="how__card reveal" tabindex="0" role="button" aria-expanded="false" aria-label="Powered by Voice AI Moderation — flip for details">
             <div class="how__card-inner">
               <div class="how__card-face how__card-face--front">
                 <p class="how__card-num" data-count-to="3" data-pad="2">03</p>
-                <h3 class="how__card-heading">Fielded Through the Method the Question Demands</h3>
+                <h3 class="how__card-heading">Powered by Voice AI Moderation</h3>
                 <p class="how__card-hint">Tap to explore →</p>
               </div>
               <div class="how__card-face how__card-face--back" aria-hidden="true">
-                <h4 class="how__card-back-heading">Fielded Through the Method the Question Demands</h4>
+                <h4 class="how__card-back-heading">Powered by Voice AI Moderation</h4>
                 <p>
-                  We've built a research toolkit designed to get deeper,
-                  higher quality insights from every respondent — from
-                  AI-moderated interviews that probe intelligently and adapt
-                  in real time, to conversational surveys that uncover
-                  richer responses at scale.
+                  Voice AI lets us conduct interviews differently —
+                  moderating conversations in real time, probing
+                  intelligently, following unexpected threads, and adapting
+                  each interview based on what the respondent says.
                 </p>
                 <p>
-                  The advantage isn't simply having more methods. It's
-                  knowing which one will produce the strongest evidence for
-                  the question at hand and combining them with traditional
-                  tools when the answer demands it.
+                  That makes it possible to bring the depth of qualitative
+                  interviewing to more respondents, questions, and moments
+                  than traditional moderation allows, while our experts
+                  direct the research and interpret what emerges.
                 </p>
                 <p>
-                  The result is flexibility to match the business question
-                  and the depth to uncover what others miss.
+                  Your team gets richer conversations, broader exploration,
+                  and qualitative depth at a new scale.
                 </p>
               </div>
             </div>
