@@ -45,6 +45,16 @@ SAMPLE_RATE = 24000
 CHUNK_MS = 100
 CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_MS // 1000
 
+# Diagnostic toggle: every real test past the very first one has shown
+# GPT-Live delegating rarely-to-never regardless of instructions. The one
+# thing that first run *didn't* have was a proactive commentary.append with
+# delegation_id=null for the opening line -- set this false to isolate
+# whether that's teaching the model content can appear outside delegation
+# and suppressing its own inclination to hand off for the rest of the
+# session. When false, the opening line is only spoken once the
+# participant speaks first and a real delegation fires, same as run 1.
+PROACTIVE_OPENING = os.environ.get("GPT_LIVE_PROACTIVE_OPENING", "true").lower() != "false"
+
 
 def log_raw_event(debug_log: Path, direction: str, event: dict) -> None:
     TRANSCRIPTS_DIR.mkdir(exist_ok=True)
@@ -291,7 +301,10 @@ async def run() -> None:
 
                 if etype == "session.started":
                     print("[session started]")
-                    asyncio.create_task(send_opening())
+                    if PROACTIVE_OPENING:
+                        asyncio.create_task(send_opening())
+                    else:
+                        print("[waiting for participant to speak first — PROACTIVE_OPENING is off]")
 
                 elif etype == "session.input_transcript.delta":
                     buf.add_input_delta(event.get("delta", ""))
