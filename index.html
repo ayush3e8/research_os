@@ -220,9 +220,36 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
+    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 40%, transparent 90%);
+  }
+
+  .hero__bg-dots {
+    position: absolute;
+    inset: 0;
     background-image: radial-gradient(var(--dot) 1px, transparent 1px);
     background-size: 28px 28px;
-    mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 40%, transparent 90%);
+    opacity: 0;
+    animation: hero-twinkle 7s ease-in-out infinite;
+  }
+  .hero__bg-dots--1 { background-position: 0 0; animation-duration: 6s; animation-delay: 0s; }
+  .hero__bg-dots--2 { background-position: 14px 7px; animation-duration: 8s; animation-delay: -2.5s; }
+  .hero__bg-dots--3 { background-position: 7px 21px; animation-duration: 7s; animation-delay: -4.5s; }
+  .hero__bg-dots--4 { background-position: 21px 14px; animation-duration: 9s; animation-delay: -6s; }
+
+  @keyframes hero-twinkle {
+    0%, 100% { opacity: 0; }
+    15% { opacity: 0.9; }
+    30% { opacity: 0.15; }
+    50% { opacity: 0.7; }
+    68% { opacity: 0.05; }
+    85% { opacity: 0.6; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__bg-dots {
+      animation: none;
+      opacity: 1;
+    }
   }
 
   .hero__blob {
@@ -615,7 +642,12 @@
   <main id="top">
     <!-- ===================== Hero ===================== -->
     <section class="hero">
-      <div class="hero__bg" aria-hidden="true"></div>
+      <div class="hero__bg" aria-hidden="true">
+        <span class="hero__bg-dots hero__bg-dots--1"></span>
+        <span class="hero__bg-dots hero__bg-dots--2"></span>
+        <span class="hero__bg-dots hero__bg-dots--3"></span>
+        <span class="hero__bg-dots hero__bg-dots--4"></span>
+      </div>
       <div class="hero__blob hero__blob--a" aria-hidden="true"></div>
       <div class="hero__blob hero__blob--b" aria-hidden="true"></div>
       <div class="hero__inner">
