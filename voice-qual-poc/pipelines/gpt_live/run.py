@@ -61,6 +61,7 @@ class TranscriptBuffer:
         self.participant_text = ""
         self.moderator_text = ""
         self.consumed_upto = 0  # index into participant_text already sent to Claude
+        self.moderator_consumed_upto = 0  # index into moderator_text already sent to Claude
 
     def add_input_delta(self, delta: str) -> None:
         self.participant_text += delta
@@ -73,6 +74,15 @@ class TranscriptBuffer:
 
     def mark_consumed(self) -> None:
         self.consumed_upto = len(self.participant_text)
+
+    def pending_moderator_text(self) -> str:
+        """GPT-Live's own improvised speech since the last delegation —
+        Claude never authored this, but needs to see it happened so it
+        doesn't lose track of what's already been covered."""
+        return self.moderator_text[self.moderator_consumed_upto :].strip()
+
+    def mark_moderator_consumed(self) -> None:
+        self.moderator_consumed_upto = len(self.moderator_text)
 
 
 async def run() -> None:
@@ -101,7 +111,19 @@ async def run() -> None:
                     f"about: {STUDY_TOPIC}. A backend moderator conducts the actual "
                     f"interview — it decides what to ask and sends you the exact "
                     f"words to speak. You are a pass-through voice interface, not "
-                    f"a conversational participant of your own. "
+                    f"a conversational participant of your own.\n\n"
+                    "Delegation policy:\n"
+                    "Backend tools:\n"
+                    "- None. The backend authors every question, follow-up, and "
+                    "closing line you speak — it is your only source of interview content.\n\n"
+                    "Delegate to the backend when:\n"
+                    "- The participant finishes speaking, every single time, with "
+                    "no exceptions — including short replies, ratings, off-topic "
+                    "remarks, or requests to repeat/clarify something.\n"
+                    "- There is any doubt about whether to delegate.\n\n"
+                    "Do not delegate to the backend when:\n"
+                    "- Never. There is no case where you should decide the next "
+                    "interview question yourself instead of delegating.\n\n"
                     "Speak the backend's content word-for-word: no rephrasing, no "
                     "summarizing, no changing the wording, and no additions before "
                     "or after it. Specifically, never prepend framing like 'Great', "
@@ -198,6 +220,22 @@ async def run() -> None:
             await speak(opening, delegation_id=None, t_ref=t0)
 
         async def handle_delegation(delegation_id: str, t_delegated: float) -> None:
+            # GPT-Live may have improvised its own speech since the last
+            # delegation (it doesn't reliably delegate every turn despite
+            # the policy above) -- surface that to Claude so it doesn't
+            # lose track of what's already been covered and re-ask it.
+            # Imperfect: this can also re-include the transcription echo of
+            # Claude's own last delegated line if it arrives after we mark
+            # consumed, since nothing tags which spoken text came from
+            # which source. Harmless redundancy, not worth the complexity
+            # of event-level attribution to fully dedupe here.
+            own_speech = buf.pending_moderator_text()
+            if own_speech:
+                note = f"[spoken by the voice layer on its own, not authored by you]: {own_speech}"
+                transcript.append({"role": "moderator", "text": note})
+                log.add_turn(Turn("moderator", note, t_delegated, t_delegated))
+                buf.mark_moderator_consumed()
+
             pending = buf.pending_participant_text()
             if pending:
                 transcript.append({"role": "participant", "text": pending})
@@ -205,6 +243,12 @@ async def run() -> None:
                 buf.mark_consumed()
 
             reply = await asyncio.to_thread(next_utterance, transcript, elapsed_seconds=t_delegated)
+            if not reply.strip():
+                # Rare, but seen in testing: retry once before falling back
+                # rather than sending an empty commentary.append.
+                reply = await asyncio.to_thread(next_utterance, transcript, elapsed_seconds=t_delegated)
+            if not reply.strip():
+                reply = "Sorry, could you say that again?"
             await speak(reply, delegation_id=delegation_id, t_ref=t_delegated)
 
         async def close_after_speaking() -> None:
