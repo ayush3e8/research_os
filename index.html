@@ -139,6 +139,12 @@
     color: var(--ink);
   }
 
+  .site-nav__links a.is-active,
+  .site-nav__mobile a.is-active {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
   .site-nav__right {
     display: flex;
     align-items: center;
@@ -326,6 +332,14 @@
     transform: translateY(-1px);
   }
 
+  .cta-arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  .hero__cta-btn:hover .cta-arrow {
+    transform: translateX(3px);
+  }
+
   /* ===================== Shared section header ===================== */
   .section-header {
     max-width: 720px;
@@ -397,6 +411,7 @@
     line-height: 1;
     font-size: clamp(40px, 5vw, 64px);
     margin: 0 0 14px;
+    font-variant-numeric: tabular-nums;
   }
 
   .how__heading {
@@ -426,6 +441,11 @@
   .how__row--reverse .how__lead { order: 1; }
   .how__row--reverse .how__copy { order: 2; }
 
+  .how__copy.reveal { transition-delay: 0s; }
+  .how__lead.reveal { transition-delay: 0.12s; }
+  .how__row--reverse .how__lead.reveal { transition-delay: 0s; }
+  .how__row--reverse .how__copy.reveal { transition-delay: 0.12s; }
+
   @media (max-width: 860px) {
     .how__row { grid-template-columns: 1fr; }
     .how__lead { order: 0; }
@@ -454,6 +474,9 @@
   @media (max-width: 860px) {
     .story__body { grid-template-columns: 1fr; }
   }
+
+  .story__narrative.reveal { transition-delay: 0s; }
+  .story__stats.reveal { transition-delay: 0.12s; }
 
   .story__copy {
     font-family: var(--sans);
@@ -488,6 +511,7 @@
     letter-spacing: -0.01em;
     line-height: 1;
     font-size: clamp(28px, 3.2vw, 40px);
+    font-variant-numeric: tabular-nums;
   }
 
   .story__stat-unit {
@@ -660,7 +684,7 @@
           enhances and accelerates insights, helping teams make better
           strategic decisions.
         </p>
-        <a class="hero__cta-btn reveal" href="https://calendly.com/ayush-3e8/30min" target="_blank" rel="noopener">Schedule a Call →</a>
+        <a class="hero__cta-btn reveal" href="https://calendly.com/ayush-3e8/30min" target="_blank" rel="noopener">Schedule a Call <span class="cta-arrow">→</span></a>
       </div>
     </section>
 
@@ -678,7 +702,7 @@
         </div>
 
         <div class="story__body">
-          <div class="reveal">
+          <div class="story__narrative reveal">
             <p class="story__copy">
               We kept seeing the same problem: traditional market research
               forces tradeoffs before the work even begins.
@@ -706,17 +730,17 @@
             <p class="eyebrow">Track Record</p>
 
             <div class="story__stat">
-              <p class="story__stat-value"><span class="story__stat-num">15</span><span class="story__stat-unit">Years</span></p>
+              <p class="story__stat-value"><span class="story__stat-num" data-count-to="15">15</span><span class="story__stat-unit">Years</span></p>
               <p class="story__stat-label">Biopharma market research and commercial strategy experience</p>
             </div>
 
             <div class="story__stat">
-              <p class="story__stat-value"><span class="story__stat-num">10</span><span class="story__stat-unit">of the Top 20</span></p>
+              <p class="story__stat-value"><span class="story__stat-num" data-count-to="10">10</span><span class="story__stat-unit">of the Top 20</span></p>
               <p class="story__stat-label">Global biopharma companies advised</p>
             </div>
 
             <div class="story__stat">
-              <p class="story__stat-value"><span class="story__stat-num">100+</span><span class="story__stat-unit">Products</span></p>
+              <p class="story__stat-value"><span class="story__stat-num" data-count-to="100" data-suffix="+">100+</span><span class="story__stat-unit">Products</span></p>
               <p class="story__stat-label">Across commercial stages and therapeutic areas</p>
             </div>
           </div>
@@ -738,8 +762,8 @@
           </p>
         </div>
 
-        <div class="how__row reveal">
-          <div class="how__copy">
+        <div class="how__row">
+          <div class="how__copy reveal">
             <p>
               Every engagement is led by a senior life sciences expert with
               deep experience solving business problems across the full
@@ -755,14 +779,14 @@
               throughout the engagement.
             </p>
           </div>
-          <div class="how__lead">
-            <p class="how__num">01</p>
+          <div class="how__lead reveal">
+            <p class="how__num" data-count-to="1" data-pad="2">01</p>
             <h3 class="how__heading">Led by Senior Life Sciences Experts</h3>
           </div>
         </div>
 
-        <div class="how__row how__row--reverse reveal">
-          <div class="how__copy">
+        <div class="how__row how__row--reverse">
+          <div class="how__copy reveal">
             <p>
               AI agents execute and iterate across the research workflow —
               building context, developing design materials, coordinating
@@ -780,14 +804,14 @@
               depth, more iteration, and faster execution.
             </p>
           </div>
-          <div class="how__lead">
-            <p class="how__num">02</p>
+          <div class="how__lead reveal">
+            <p class="how__num" data-count-to="2" data-pad="2">02</p>
             <h3 class="how__heading">Made Efficient Through Agentic Workflows</h3>
           </div>
         </div>
 
-        <div class="how__row reveal">
-          <div class="how__copy">
+        <div class="how__row">
+          <div class="how__copy reveal">
             <p>
               We've built a research toolkit designed to get deeper, higher
               quality insights from every respondent — from AI-moderated
@@ -806,8 +830,8 @@
               the depth to uncover what others miss.
             </p>
           </div>
-          <div class="how__lead">
-            <p class="how__num">03</p>
+          <div class="how__lead reveal">
+            <p class="how__num" data-count-to="3" data-pad="2">03</p>
             <h3 class="how__heading">Fielded Through the Method the Question Demands</h3>
           </div>
         </div>
@@ -820,7 +844,7 @@
       <p class="final-cta__sub reveal">
         Tell us a bit about what you're working on and we'll be in touch.
       </p>
-      <a class="hero__cta-btn reveal" href="https://calendly.com/ayush-3e8/30min" target="_blank" rel="noopener">Schedule a Call →</a>
+      <a class="hero__cta-btn reveal" href="https://calendly.com/ayush-3e8/30min" target="_blank" rel="noopener">Schedule a Call <span class="cta-arrow">→</span></a>
     </section>
   </main>
 
@@ -894,6 +918,68 @@
         revealEls.forEach(function (el) { io.observe(el); });
       } else {
         revealEls.forEach(function (el) { el.classList.add("is-visible"); });
+      }
+
+      // Count-up numbers
+      var prefersReducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var countEls = Array.prototype.slice.call(document.querySelectorAll("[data-count-to]"));
+      function formatCount(value, pad, suffix) {
+        var text = String(Math.round(value));
+        while (text.length < pad) { text = "0" + text; }
+        return text + suffix;
+      }
+      function animateCount(el) {
+        var target = parseFloat(el.getAttribute("data-count-to"));
+        var pad = parseInt(el.getAttribute("data-pad") || "0", 10);
+        var suffix = el.getAttribute("data-suffix") || "";
+        var duration = 1100;
+        var start = null;
+        function step(ts) {
+          if (start === null) { start = ts; }
+          var progress = Math.min((ts - start) / duration, 1);
+          var eased = 1 - Math.pow(1 - progress, 3);
+          el.textContent = formatCount(target * eased, pad, suffix);
+          if (progress < 1) { requestAnimationFrame(step); }
+        }
+        requestAnimationFrame(step);
+      }
+      if (countEls.length && "IntersectionObserver" in window && !prefersReducedMotion) {
+        countEls.forEach(function (el) {
+          var pad = parseInt(el.getAttribute("data-pad") || "0", 10);
+          el.textContent = formatCount(0, pad, "");
+        });
+        var countObserver = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                animateCount(entry.target);
+                countObserver.unobserve(entry.target);
+              }
+            });
+          },
+          { threshold: 0.4 }
+        );
+        countEls.forEach(function (el) { countObserver.observe(el); });
+      }
+
+      // Scrollspy nav
+      var navLinkEls = Array.prototype.slice.call(document.querySelectorAll(".site-nav__links a, .site-nav__mobile a"));
+      var spySections = Array.prototype.slice.call(document.querySelectorAll("main section[id]"));
+      if ("IntersectionObserver" in window && spySections.length && navLinkEls.length) {
+        var spyObserver = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                var id = entry.target.id;
+                navLinkEls.forEach(function (a) {
+                  a.classList.toggle("is-active", a.getAttribute("href") === "#" + id);
+                });
+              }
+            });
+          },
+          { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
+        );
+        spySections.forEach(function (s) { spyObserver.observe(s); });
       }
     })();
   </script>

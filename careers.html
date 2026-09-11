@@ -322,6 +322,19 @@
     border-radius: 999px;
     padding: 11px 20px;
     margin-top: 4px;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+  .careers__apply:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+  }
+
+  .cta-arrow {
+    display: inline-block;
+    transition: transform 0.2s ease;
+  }
+  .careers__apply:hover .cta-arrow {
+    transform: translateX(3px);
   }
 
   /* ===================== Footer ===================== */
@@ -483,7 +496,7 @@
               next era of insights generation in life sciences looks like.
             </p>
             <a class="careers__apply" href="mailto:careers@3e8.ai?subject=Principal%2C%20Market%20Research">
-              Submit Interest →
+              Submit Interest <span class="cta-arrow">→</span>
             </a>
           </div>
 
@@ -507,7 +520,7 @@
               transform the way market research gets done.
             </p>
             <a class="careers__apply" href="mailto:careers@3e8.ai?subject=Founding%20AI%20Engineer">
-              Submit Interest →
+              Submit Interest <span class="cta-arrow">→</span>
             </a>
           </div>
         </div>
