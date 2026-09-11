@@ -128,7 +128,7 @@ def main() -> None:
             break
 
         t_req = clock.now()
-        reply = next_utterance(transcript)
+        reply = next_utterance(transcript, elapsed_seconds=t_req)
         t_reply = clock.now()
         audio = speak(reply)
         t_audio = clock.now()

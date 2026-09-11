@@ -204,7 +204,7 @@ async def run() -> None:
                 log.add_turn(Turn("participant", pending, t_delegated, t_delegated))
                 buf.mark_consumed()
 
-            reply = await asyncio.to_thread(next_utterance, transcript)
+            reply = await asyncio.to_thread(next_utterance, transcript, elapsed_seconds=t_delegated)
             await speak(reply, delegation_id=delegation_id, t_ref=t_delegated)
 
         async def close_after_speaking() -> None:

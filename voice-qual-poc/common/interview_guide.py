@@ -6,6 +6,8 @@ the moderator prompt instructs Claude to probe rather than lead.
 
 STUDY_TOPIC = "Early experience setting up and using a new note-taking app"
 
+TARGET_DURATION_MINUTES = 20
+
 OPENING_SCRIPT = (
     "Hi, thanks for making time today. I'm going to ask you about your recent "
     "experience getting started with the note-taking app. There are no wrong "
