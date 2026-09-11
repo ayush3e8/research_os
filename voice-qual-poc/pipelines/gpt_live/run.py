@@ -12,8 +12,8 @@ and only the voice layer differs.
 
 Schema note: GPT-Live-1's API shipped 2026-09-10. The event names/fields
 below are transcribed from OpenAI's docs at launch and may drift — this
-script logs every raw event to transcripts/gpt_live_debug.jsonl so you can
-diff against reality on the first run instead of guessing blind.
+script logs every raw event to transcripts/gpt_live_debug_<timestamp>.jsonl
+(one file per run) so you can diff against reality instead of guessing blind.
 
 Usage:
     python -m pipelines.gpt_live.run
@@ -44,13 +44,11 @@ SAMPLE_RATE = 24000
 CHUNK_MS = 100
 CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_MS // 1000
 
-DEBUG_LOG = TRANSCRIPTS_DIR / "gpt_live_debug.jsonl"
-
-
-def log_raw_event(direction: str, event: dict) -> None:
+def log_raw_event(debug_log: Path, direction: str, event: dict) -> None:
     TRANSCRIPTS_DIR.mkdir(exist_ok=True)
-    with DEBUG_LOG.open("a") as f:
+    with debug_log.open("a") as f:
         f.write(json.dumps({"t": time.time(), "dir": direction, "event": event}) + "\n")
+
 
 
 class TranscriptBuffer:
@@ -82,10 +80,14 @@ async def run() -> None:
     transcript: list[dict] = []  # shared format for common/moderator.py
     buf = TranscriptBuffer()
 
+    # One debug log per run (matches the transcript json's timestamp) so
+    # consecutive runs never get mashed into the same file.
+    debug_log = TRANSCRIPTS_DIR / f"gpt_live_debug_{int(log.started_at)}.jsonl"
+
     headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}
 
     print("=== Pipeline B: GPT-Live-1 (full duplex) ===")
-    print(f"Debug event log: {DEBUG_LOG}")
+    print(f"Debug event log: {debug_log}")
 
     async with websockets.connect(WS_URL, additional_headers=headers) as ws:
         session_start = {
@@ -117,7 +119,7 @@ async def run() -> None:
             },
         }
         await ws.send(json.dumps(session_start))
-        log_raw_event("send", session_start)
+        log_raw_event(debug_log, "send", session_start)
 
         loop = asyncio.get_event_loop()
         audio_out_queue: asyncio.Queue[bytes] = asyncio.Queue()
@@ -177,7 +179,7 @@ async def run() -> None:
                 "content": reply,
             }
             await ws.send(json.dumps(append_event))
-            log_raw_event("send", append_event)
+            log_raw_event(debug_log, "send", append_event)
             log.add_turn(
                 Turn("moderator", reply, t_delegated, t_reply, latency_ms=(t_reply - t_delegated) * 1000)
             )
@@ -190,7 +192,7 @@ async def run() -> None:
         try:
             async for raw in ws:
                 event = json.loads(raw)
-                log_raw_event("recv", event)
+                log_raw_event(debug_log, "recv", event)
                 etype = event.get("type")
 
                 if etype == "session.started":
@@ -230,7 +232,10 @@ async def run() -> None:
 
 
 def main() -> None:
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("\nStopped.")
 
 
 if __name__ == "__main__":
