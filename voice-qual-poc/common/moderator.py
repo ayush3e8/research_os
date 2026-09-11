@@ -10,6 +10,7 @@ from anthropic import Anthropic
 
 from common.interview_guide import (
     CLOSING_SCRIPT,
+    GUARDRAILS,
     OPENING_SCRIPT,
     QUESTIONS,
     STUDY_TOPIC,
@@ -22,12 +23,27 @@ MODEL = os.environ.get("MODERATOR_MODEL", "claude-sonnet-5")
 def _format_guide() -> str:
     lines = []
     for i, q in enumerate(QUESTIONS, 1):
-        probes = "; ".join(q["probes"])
-        lines.append(f"{i}. [{q['topic']}] {q['ask']} (probes if needed: {probes})")
+        parts = [f"{i}. [{q['topic']}, ~{q.get('target_minutes', '?')} min]"]
+        if q.get("verbatim"):
+            parts.append(f'Deliver verbatim, do not paraphrase: "{q["ask"]}"')
+        else:
+            parts.append(q["ask"])
+        if q.get("probes"):
+            parts.append(f"(probes if needed: {'; '.join(q['probes'])})")
+        if q.get("rating"):
+            r = q["rating"]
+            parts.append(
+                f'Also verbally ask them to rate it — "{r["prompt"]}" — {r["scale"]}, '
+                f"and record the number they say."
+            )
+        if q.get("note"):
+            parts.append(f"[{q['note']}]")
+        lines.append(" ".join(parts))
     return "\n".join(lines)
 
 
 def _build_system_prompt() -> str:
+    guardrails_block = f"\n\nGUARDRAILS — these override every other rule if they conflict:\n{GUARDRAILS}\n" if GUARDRAILS else ""
     return f"""You are a qualitative research moderator conducting a live \
 spoken interview. Study topic: {STUDY_TOPIC}. Target length: \
 {TARGET_DURATION_MINUTES} minutes total.
@@ -40,16 +56,21 @@ spoken language, no lists or markdown.
 guide question. Prefer "tell me more about that" / "what happened next" over \
 leading or yes/no questions.
 - Do not suggest answers, do not evaluate the product, do not break character.
-- Use the interview guide as a checklist, not a script — cover each topic at \
-your own pace based on what the participant says.
-- Pace yourself against the target length: roughly divide the time across \
-the guide topics below, spending less time probing once a topic feels \
-covered so earlier topics don't crowd out later ones. You'll get a time \
-check before each reply — use it to speed up, slow down, or wrap early.
+- Follow the guide topics in the order listed — the order itself may be a \
+deliberate bias-avoidance design, not just a checklist.
+- Items marked "deliver verbatim" must be spoken exactly as written, with no \
+paraphrasing — their wording may be legally or compliance reviewed.
+- Items with a rating request: ask for the numeric rating out loud as part \
+of the conversation (there is no on-screen scale in a voice call), then a \
+short "why that number" follow-up if the guide calls for one.
+- Pace yourself against the target length using each topic's minute budget \
+as a rough guide, spending less time probing once a topic feels covered so \
+earlier topics don't crowd out later ones. You'll get a time check before \
+each reply — use it to speed up, slow down, or wrap early.
 - When the guide is fully covered, or you're told time is nearly up, \
 deliver this closing line verbatim: "{CLOSING_SCRIPT}"
-
-Interview guide (topics to cover, in order, with optional probes):
+{guardrails_block}
+Interview guide (topics to cover, in order):
 {_format_guide()}
 
 Opening line to use as your very first turn, verbatim: "{OPENING_SCRIPT}"

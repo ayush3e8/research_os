@@ -16,6 +16,25 @@ Both pipelines call the exact same moderator brain
 (`common/moderator.py` + `common/interview_guide.py`), so any difference in
 session quality is attributable to the voice/turn-taking layer, not the
 reasoning — that's the controlled variable that makes the comparison fair.
+The brain also paces itself against each guide's target length (a silent
+per-turn time-check nudges it to prioritize uncovered topics as time runs
+low, and to wrap to the closing line with ~2 min left).
+
+## Interview guides
+
+Set `INTERVIEW_GUIDE` in `.env` to pick which guide runs (default:
+`biopharma_v1`). Guides live in `common/guides/`:
+
+- `sample` — throwaway note-taking-app guide, useful for quick pipeline smoke tests
+- `biopharma_v1` — Market Research Practices in Biopharma (20 min, sponsor-blind, live paid pilot)
+- `biopharma_v2` — AI-Native Market Research for Biopharma (25 min, concept/demand validation)
+
+The two real guides carry per-question time budgets, guardrails (injected
+into the moderator's system prompt as hard constraints), rating-scale
+questions (asked verbally since there's no tap UI in a voice call), and
+`verbatim` items whose exact wording must be spoken unparaphrased — notably
+v1's sponsor-blind reveal. Add a new guide by copying one of these files'
+structure and pointing `INTERVIEW_GUIDE` at its module name.
 
 ## Setup
 
@@ -46,9 +65,24 @@ in `pipelines/gpt_live/run.py` (`session.start`, `session.input_audio.append`,
 `session.delegation.created`, `session.commentary.append`, etc.) are
 transcribed from OpenAI's launch docs and **may not be pixel-perfect**.
 The script logs every raw inbound/outbound event to
-`transcripts/gpt_live_debug.jsonl` — if something doesn't fire as expected,
+`transcripts/gpt_live_debug_<timestamp>.jsonl` (one file per run, matching
+the transcript json's timestamp) — if something doesn't fire as expected,
 that log is the fastest way to see what the server actually sent and adjust
 field names.
+
+Two behaviors worth knowing about, found by actually running this against
+the live API:
+- GPT-Live doesn't reliably stay a passive relay even in "client
+  delegation" mode — it can rephrase/pad what you send it, or occasionally
+  respond on its own judgment without delegating at all. The saved JSON's
+  `meta.raw_participant_transcript`/`raw_moderator_transcript` fields
+  capture what was *actually* said (reconstructed from transcript deltas),
+  separately from the `turns` list (which only captures Claude-authored
+  content) — diff the two if a session feels off.
+- There's no documented "finished speaking" event, so the auto hang-up
+  (`close_after_speaking` in `run.py`) waits for output audio to go quiet
+  for ~1.2s as a heuristic once Claude delivers the closing line. Tune that
+  delay if it cuts off early or lingers.
 
 Key design points from the docs worth knowing before you touch this code:
 - `delegation.created` carries **no task text**, only an id — you reconstruct
@@ -69,7 +103,6 @@ Key design points from the docs worth knowing before you touch this code:
 - If GPT-Live-1 wins on latency/naturalness as expected, decide whether to
   keep Claude as the reasoning backend (via client delegation, as built
   here) or let GPT-Live delegate to a Responses-managed backend instead.
-- Swap the sample interview guide for a real study script.
 - If this graduates past a throwaway test, the push-to-talk / polling
   loops here should become a proper barge-in-aware duplex client for
   pipeline A too, or just be retired in favor of GPT-Live if it's the

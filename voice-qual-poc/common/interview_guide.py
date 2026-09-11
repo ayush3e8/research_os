@@ -1,49 +1,22 @@
-"""Sample qual interview guide used by both pipelines.
+"""Loads the active interview guide, selected via the INTERVIEW_GUIDE env
+var (default: biopharma_v1). Available guides live in common/guides/:
+  - sample        throwaway note-taking-app guide used for pipeline testing
+  - biopharma_v1  Market Research Practices in Biopharma (live paid pilot)
+  - biopharma_v2  AI-Native Market Research for Biopharma (concept validation)
 
-Swap this out for a real study guide. Keep questions open-ended —
-the moderator prompt instructs Claude to probe rather than lead.
+Both pipelines and common/moderator.py import from this module, not from
+common/guides/* directly, so swapping guides never requires touching
+pipeline code.
 """
+import importlib
+import os
 
-STUDY_TOPIC = "Early experience setting up and using a new note-taking app"
+_GUIDE_NAME = os.environ.get("INTERVIEW_GUIDE", "biopharma_v1")
+_guide = importlib.import_module(f"common.guides.{_GUIDE_NAME}")
 
-TARGET_DURATION_MINUTES = 20
-
-OPENING_SCRIPT = (
-    "Hi, thanks for making time today. I'm going to ask you about your recent "
-    "experience getting started with the note-taking app. There are no wrong "
-    "answers — I'm just trying to understand your experience. Ready to start?"
-)
-
-QUESTIONS = [
-    {
-        "topic": "first impressions",
-        "ask": "Walk me through the first few minutes after you opened the app for the first time.",
-        "probes": [
-            "What were you expecting to happen at that point?",
-            "Was there a moment you felt confused or unsure what to do?",
-        ],
-    },
-    {
-        "topic": "core task",
-        "ask": "Tell me about the last time you actually created a note in the app.",
-        "probes": [
-            "What made you decide to capture that particular thing?",
-            "Did you consider using another tool instead? Why or why not?",
-        ],
-    },
-    {
-        "topic": "friction",
-        "ask": "Was there anything that took longer than you expected, or that you had to redo?",
-        "probes": ["What did you try first?", "How did you eventually work around it?"],
-    },
-    {
-        "topic": "value",
-        "ask": "If the app disappeared tomorrow, what would you miss most, if anything?",
-        "probes": ["What would you use instead?"],
-    },
-]
-
-CLOSING_SCRIPT = (
-    "That's everything I wanted to cover. Is there anything else about your "
-    "experience you think I should know that I didn't ask about?"
-)
+STUDY_TOPIC = _guide.STUDY_TOPIC
+TARGET_DURATION_MINUTES = _guide.TARGET_DURATION_MINUTES
+OPENING_SCRIPT = _guide.OPENING_SCRIPT
+CLOSING_SCRIPT = _guide.CLOSING_SCRIPT
+GUARDRAILS = _guide.GUARDRAILS
+QUESTIONS = _guide.QUESTIONS
