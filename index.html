@@ -351,19 +351,25 @@
   .how__row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
+    align-items: start;
     gap: clamp(32px, 6vw, 72px);
     padding: clamp(40px, 6vw, 64px) 0;
   }
   .how__row + .how__row { border-top: 1px solid var(--border); }
 
+  .how__lead {
+    order: 2;
+  }
+
   .how__num {
     font-family: var(--mono);
-    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.08em;
     color: var(--muted);
-    margin: 0 0 16px;
+    opacity: 0.5;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    font-size: clamp(40px, 5vw, 64px);
+    margin: 0 0 14px;
   }
 
   .how__heading {
@@ -371,8 +377,13 @@
     font-weight: 600;
     letter-spacing: -0.01em;
     line-height: 1.2;
-    font-size: clamp(22px, 2.6vw, 30px);
-    margin: 0 0 20px;
+    font-size: clamp(24px, 2.8vw, 32px);
+    margin: 0;
+    max-width: 22ch;
+  }
+
+  .how__copy {
+    order: 1;
   }
 
   .how__copy p {
@@ -385,20 +396,13 @@
   }
   .how__copy p:last-child { margin-bottom: 0; }
 
-  .how__art {
-    width: 100%;
-    height: auto;
-    color: var(--ink);
-    overflow: visible;
-  }
-
-  .how__row--reverse .how__art {
-    order: -1;
-  }
+  .how__row--reverse .how__lead { order: 1; }
+  .how__row--reverse .how__copy { order: 2; }
 
   @media (max-width: 860px) {
     .how__row { grid-template-columns: 1fr; }
-    .how__art { order: -1; max-height: 220px; }
+    .how__lead { order: 0; }
+    .how__copy { order: 1; }
   }
 
   /* ===================== Story ===================== */
@@ -673,28 +677,6 @@
 
     <!-- ===================== How we work ===================== -->
     <section class="how" id="how-we-work">
-      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
-        <defs>
-          <symbol id="how-visual-expert" viewBox="0 0 640 380">
-            <rect x="180" y="70" width="280" height="240" rx="20" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.3"/>
-            <circle cx="320" cy="190" r="86" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55"/>
-            <circle cx="320" cy="190" r="10" fill="currentColor" opacity="0.75"/>
-          </symbol>
-
-          <symbol id="how-visual-agents" viewBox="0 0 640 380">
-            <rect x="200" y="90" width="240" height="200" rx="28" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.35"/>
-            <rect x="240" y="130" width="160" height="120" rx="14" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.6"/>
-            <circle cx="320" cy="190" r="9" fill="currentColor" opacity="0.75"/>
-          </symbol>
-
-          <symbol id="how-visual-methods" viewBox="0 0 640 380">
-            <path d="M320,80 L440,190 L320,300 L200,190 Z" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.5"/>
-            <circle cx="320" cy="190" r="46" fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.6"/>
-            <circle cx="320" cy="190" r="8" fill="currentColor" opacity="0.75"/>
-          </symbol>
-        </defs>
-      </svg>
-
       <div class="how__inner">
         <div class="section-header reveal">
           <p class="eyebrow">Our Approach</p>
@@ -708,86 +690,77 @@
         </div>
 
         <div class="how__row reveal">
-          <div>
-            <p class="how__num">01 /</p>
-            <h3 class="how__heading">Led by Senior Life Sciences Experts</h3>
-            <div class="how__copy">
-              <p>
-                Every engagement is led by a senior life sciences expert with
-                deep experience solving business problems across the full
-                lifecycle.
-              </p>
-              <p>
-                They don't just oversee the work. They scope the study, shape
-                the research, work directly with the data, pressure-test the
-                findings, and stand behind every insight and recommendation.
-              </p>
-              <p>
-                Your team gets senior expert oversight and judgment
-                throughout the engagement.
-              </p>
-            </div>
+          <div class="how__copy">
+            <p>
+              Every engagement is led by a senior life sciences expert with
+              deep experience solving business problems across the full
+              lifecycle.
+            </p>
+            <p>
+              They don't just oversee the work. They scope the study, shape
+              the research, work directly with the data, pressure-test the
+              findings, and stand behind every insight and recommendation.
+            </p>
+            <p>
+              Your team gets senior expert oversight and judgment
+              throughout the engagement.
+            </p>
           </div>
-          <svg class="how__art" viewBox="0 0 640 380" aria-hidden="true">
-            <use href="#how-visual-expert"></use>
-          </svg>
+          <div class="how__lead">
+            <p class="how__num">01</p>
+            <h3 class="how__heading">Led by Senior Life Sciences Experts</h3>
+          </div>
         </div>
 
         <div class="how__row how__row--reverse reveal">
-          <div>
-            <p class="how__num">02 /</p>
-            <h3 class="how__heading">Made Efficient Through Agentic Workflows</h3>
-            <div class="how__copy">
-              <p>
-                AI agents execute and iterate across the research workflow —
-                building context, developing design materials, coordinating
-                fieldwork, analyzing data, testing hypotheses, and
-                synthesizing findings.
-              </p>
-              <p>
-                Our experts direct those workflows, challenging what emerges,
-                and applying the judgment needed to distinguish an
-                interesting pattern from an insight that should drive a
-                decision.
-              </p>
-              <p>
-                The result is senior-led research amplified by AI: greater
-                depth, more iteration, and faster execution.
-              </p>
-            </div>
+          <div class="how__copy">
+            <p>
+              AI agents execute and iterate across the research workflow —
+              building context, developing design materials, coordinating
+              fieldwork, analyzing data, testing hypotheses, and
+              synthesizing findings.
+            </p>
+            <p>
+              Our experts direct those workflows, challenging what emerges,
+              and applying the judgment needed to distinguish an
+              interesting pattern from an insight that should drive a
+              decision.
+            </p>
+            <p>
+              The result is senior-led research amplified by AI: greater
+              depth, more iteration, and faster execution.
+            </p>
           </div>
-          <svg class="how__art" viewBox="0 0 640 380" aria-hidden="true">
-            <use href="#how-visual-agents"></use>
-          </svg>
+          <div class="how__lead">
+            <p class="how__num">02</p>
+            <h3 class="how__heading">Made Efficient Through Agentic Workflows</h3>
+          </div>
         </div>
 
         <div class="how__row reveal">
-          <div>
-            <p class="how__num">03 /</p>
-            <h3 class="how__heading">Fielded Through the Method the Question Demands</h3>
-            <div class="how__copy">
-              <p>
-                We've built a research toolkit designed to get deeper, higher
-                quality insights from every respondent — from AI-moderated
-                interviews that probe intelligently and adapt in real time,
-                to conversational surveys that uncover richer responses at
-                scale.
-              </p>
-              <p>
-                The advantage isn't simply having more methods. It's knowing
-                which one will produce the strongest evidence for the
-                question at hand and combining them with traditional tools
-                when the answer demands it.
-              </p>
-              <p>
-                The result is flexibility to match the business question and
-                the depth to uncover what others miss.
-              </p>
-            </div>
+          <div class="how__copy">
+            <p>
+              We've built a research toolkit designed to get deeper, higher
+              quality insights from every respondent — from AI-moderated
+              interviews that probe intelligently and adapt in real time,
+              to conversational surveys that uncover richer responses at
+              scale.
+            </p>
+            <p>
+              The advantage isn't simply having more methods. It's knowing
+              which one will produce the strongest evidence for the
+              question at hand and combining them with traditional tools
+              when the answer demands it.
+            </p>
+            <p>
+              The result is flexibility to match the business question and
+              the depth to uncover what others miss.
+            </p>
           </div>
-          <svg class="how__art" viewBox="0 0 640 380" aria-hidden="true">
-            <use href="#how-visual-methods"></use>
-          </svg>
+          <div class="how__lead">
+            <p class="how__num">03</p>
+            <h3 class="how__heading">Fielded Through the Method the Question Demands</h3>
+          </div>
         </div>
       </div>
     </section>
