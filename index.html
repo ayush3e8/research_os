@@ -487,11 +487,12 @@
     max-width: 56ch;
   }
 
-  .story__stats { padding-top: 4px; }
+  .story__stats { padding-top: 0; }
+  .story__stats > .eyebrow { margin-bottom: 8px; }
 
   .story__stat {
     border-top: 1px solid var(--border);
-    padding: 20px 0;
+    padding: 0;
   }
   .story__stat:last-child { border-bottom: 1px solid var(--border); }
 
@@ -499,8 +500,8 @@
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: 6px 10px;
-    margin: 0 0 10px;
+    gap: 4px 10px;
+    margin: 0 0 2px;
   }
 
   .story__stat-num {
@@ -510,7 +511,7 @@
     opacity: 0.5;
     letter-spacing: -0.01em;
     line-height: 1;
-    font-size: clamp(28px, 3.2vw, 40px);
+    font-size: clamp(26px, 2.8vw, 34px);
     font-variant-numeric: tabular-nums;
   }
 
@@ -524,7 +525,7 @@
   .story__stat-label {
     font-family: var(--sans);
     font-size: 13px;
-    line-height: 1.4;
+    line-height: 1.3;
     color: var(--muted);
   }
 
@@ -704,25 +705,19 @@
         <div class="story__body">
           <div class="story__narrative reveal">
             <p class="story__copy">
-              We kept seeing the same problem: traditional market research
-              forces tradeoffs before the work even begins.
-            </p>
-            <p class="story__copy">
-              You have more questions than your surveys can accommodate. You
-              want to understand the deeper reasons behind the answers, but
-              your surveys can't generate them. You limit interviews because
-              each one adds time and cost. And when you do run your study, it
-              surfaces something so unexpected that you need another study
-              just to understand why.
+              We kept seeing the same problem: traditional research forces
+              tradeoffs between depth, speed, scale, and cost. Too many
+              questions go unanswered, and unexpected findings often
+              require another study to understand why.
             </p>
             <p class="story__copy">
               The result: you learn less than you could, and it takes longer
               than it should.
             </p>
             <p class="story__copy">
-              So we built 3e8 around that opportunity — bringing together
-              senior biopharma experts and agentic workflows to deliver
-              deeper insights with greater speed and flexibility.
+              We built 3e8 to change that — combining senior biopharma
+              expertise with agentic workflows to deliver deeper insights,
+              faster.
             </p>
           </div>
 
