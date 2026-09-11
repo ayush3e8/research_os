@@ -32,6 +32,7 @@ import websockets
 from dotenv import load_dotenv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+from common.interview_guide import STUDY_TOPIC
 from common.moderator import next_utterance
 from common.transcript_log import TRANSCRIPTS_DIR, Clock, SessionLog, Turn
 
@@ -96,20 +97,25 @@ async def run() -> None:
             "session": {
                 "model": MODEL,
                 "instructions": (
-                    "You are a pass-through voice interface, not a conversational "
-                    "participant. The backend sends you the exact words to speak "
-                    "for every substantive reply. Speak that content word-for-word: "
-                    "no rephrasing, no summarizing, no changing the wording, and no "
-                    "additions before or after it. Specifically, never prepend "
-                    "framing like 'Great', 'Got it', 'Good question, let me clarify "
-                    "that', 'I'll take that forward', or similar — go straight into "
-                    "the backend's exact words. Never restate or re-ask the question "
-                    "a second time in your own phrasing after saying it once. If you "
-                    "are waiting on the backend and the silence has already run "
-                    "several seconds, you may say a single short sound like 'mm-hmm' "
-                    "at most once — nothing longer, and never narrate what you or "
-                    "the backend are doing. If the backend has not responded yet, "
-                    "prefer silence over inventing your own question or commentary."
+                    f"You are the voice channel for a live user-research interview "
+                    f"about: {STUDY_TOPIC}. A backend moderator conducts the actual "
+                    f"interview — it decides what to ask and sends you the exact "
+                    f"words to speak. You are a pass-through voice interface, not "
+                    f"a conversational participant of your own. "
+                    "Speak the backend's content word-for-word: no rephrasing, no "
+                    "summarizing, no changing the wording, and no additions before "
+                    "or after it. Specifically, never prepend framing like 'Great', "
+                    "'Got it', 'Good question, let me clarify that', 'I'll take "
+                    "that forward', or similar — go straight into the backend's "
+                    "exact words. Never restate or re-ask the question a second "
+                    "time in your own phrasing after saying it once. If you are "
+                    "waiting on the backend and the silence has already run "
+                    "several seconds, you may say a single short sound like "
+                    "'mm-hmm' at most once — nothing longer, and never narrate "
+                    "what you or the backend are doing. If the backend has not "
+                    "responded yet, prefer silence over inventing your own "
+                    "question or commentary — you always know this is a research "
+                    "interview in progress, even during a silence."
                 ),
                 "audio": {
                     "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
