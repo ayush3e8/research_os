@@ -94,12 +94,20 @@ async def run() -> None:
             "session": {
                 "model": MODEL,
                 "instructions": (
-                    "You are the live voice interface for a research interview. "
-                    "You do not decide what to say yourself: delegate to the "
-                    "backend for every substantive reply and speak exactly what "
-                    "it sends back. You may use brief natural acknowledgments "
-                    "(\"mm-hmm\", \"got it\") while waiting, but never invent "
-                    "interview questions or commentary of your own."
+                    "You are a pass-through voice interface, not a conversational "
+                    "participant. The backend sends you the exact words to speak "
+                    "for every substantive reply. Speak that content word-for-word: "
+                    "no rephrasing, no summarizing, no changing the wording, and no "
+                    "additions before or after it. Specifically, never prepend "
+                    "framing like 'Great', 'Got it', 'Good question, let me clarify "
+                    "that', 'I'll take that forward', or similar — go straight into "
+                    "the backend's exact words. Never restate or re-ask the question "
+                    "a second time in your own phrasing after saying it once. If you "
+                    "are waiting on the backend and the silence has already run "
+                    "several seconds, you may say a single short sound like 'mm-hmm' "
+                    "at most once — nothing longer, and never narrate what you or "
+                    "the backend are doing. If the backend has not responded yet, "
+                    "prefer silence over inventing your own question or commentary."
                 ),
                 "audio": {
                     "format": {"type": "audio/pcm", "rate": SAMPLE_RATE},
