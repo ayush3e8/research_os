@@ -389,67 +389,122 @@
     margin: 0 0 20px;
   }
 
-  .how__row {
+  .how__cards {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-    gap: clamp(32px, 6vw, 72px);
-    padding: clamp(40px, 6vw, 64px) 0;
-  }
-  .how__row + .how__row { border-top: 1px solid var(--border); }
-
-  .how__lead {
-    order: 2;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(20px, 3vw, 28px);
   }
 
-  .how__num {
+  .how__card {
+    perspective: 1400px;
+    height: 520px;
+    cursor: pointer;
+  }
+
+  .how__card.reveal:nth-child(1) { transition-delay: 0s; }
+  .how__card.reveal:nth-child(2) { transition-delay: 0.1s; }
+  .how__card.reveal:nth-child(3) { transition-delay: 0.2s; }
+
+  .how__card:focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 4px;
+    border-radius: 16px;
+  }
+
+  .how__card-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+    transform-style: preserve-3d;
+  }
+
+  .how__card.is-flipped .how__card-inner {
+    transform: rotateY(180deg);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .how__card:hover .how__card-inner {
+      transform: rotateY(180deg);
+    }
+  }
+
+  .how__card-face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: clamp(24px, 3vw, 32px);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
+  .how__card-face--front {
+    justify-content: space-between;
+  }
+
+  .how__card-face--back {
+    transform: rotateY(180deg);
+    overflow-y: auto;
+  }
+
+  .how__card-num {
     font-family: var(--mono);
     font-weight: 700;
     color: var(--muted);
     opacity: 0.5;
     letter-spacing: -0.01em;
     line-height: 1;
-    font-size: clamp(40px, 5vw, 64px);
-    margin: 0 0 14px;
+    font-size: clamp(40px, 5vw, 56px);
+    margin: 0;
     font-variant-numeric: tabular-nums;
   }
 
-  .how__heading {
+  .how__card-heading {
     font-family: var(--sans);
     font-weight: 600;
     letter-spacing: -0.01em;
-    line-height: 1.2;
-    font-size: clamp(24px, 2.8vw, 32px);
-    margin: 0;
-    max-width: 22ch;
+    line-height: 1.25;
+    font-size: clamp(20px, 2.2vw, 25px);
+    margin: 16px 0 0;
   }
 
-  .how__copy {
-    order: 1;
-  }
-
-  .how__copy p {
-    font-family: var(--sans);
-    font-size: 16px;
-    line-height: 1.7;
+  .how__card-hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--muted);
-    margin: 0 0 16px;
-    max-width: 52ch;
+    margin: 0;
   }
-  .how__copy p:last-child { margin-bottom: 0; }
 
-  .how__row--reverse .how__lead { order: 1; }
-  .how__row--reverse .how__copy { order: 2; }
+  .how__card-back-heading {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 17px;
+    margin: 0 0 12px;
+  }
 
-  .how__copy.reveal { transition-delay: 0s; }
-  .how__lead.reveal { transition-delay: 0.12s; }
-  .how__row--reverse .how__lead.reveal { transition-delay: 0s; }
-  .how__row--reverse .how__copy.reveal { transition-delay: 0.12s; }
+  .how__card-face--back p {
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+  .how__card-face--back p:last-child { margin-bottom: 0; }
 
-  @media (max-width: 860px) {
-    .how__row { grid-template-columns: 1fr; }
-    .how__lead { order: 0; }
-    .how__copy { order: 1; }
+  @media (max-width: 1180px) {
+    .how__cards { grid-template-columns: 1fr; }
+    .how__card { width: 100%; max-width: 480px; height: clamp(480px, 140vw, 580px); margin: 0 auto; }
+  }
+
+  @media (max-width: 400px) {
+    .how__card { height: 620px; }
   }
 
   /* ===================== Story ===================== */
@@ -757,77 +812,92 @@
           </p>
         </div>
 
-        <div class="how__row">
-          <div class="how__copy reveal">
-            <p>
-              Every engagement is led by a senior life sciences expert with
-              deep experience solving business problems across the full
-              lifecycle.
-            </p>
-            <p>
-              They don't just oversee the work. They scope the study, shape
-              the research, work directly with the data, pressure-test the
-              findings, and stand behind every insight and recommendation.
-            </p>
-            <p>
-              Your team gets senior expert oversight and judgment
-              throughout the engagement.
-            </p>
+        <div class="how__cards">
+          <div class="how__card reveal" tabindex="0" role="button" aria-expanded="false" aria-label="Led by Senior Life Sciences Experts — flip for details">
+            <div class="how__card-inner">
+              <div class="how__card-face how__card-face--front">
+                <p class="how__card-num" data-count-to="1" data-pad="2">01</p>
+                <h3 class="how__card-heading">Led by Senior Life Sciences Experts</h3>
+                <p class="how__card-hint">Tap to explore →</p>
+              </div>
+              <div class="how__card-face how__card-face--back" aria-hidden="true">
+                <h4 class="how__card-back-heading">Led by Senior Life Sciences Experts</h4>
+                <p>
+                  Every engagement is led by a senior life sciences expert
+                  with deep experience solving business problems across the
+                  full lifecycle.
+                </p>
+                <p>
+                  They don't just oversee the work. They scope the study,
+                  shape the research, work directly with the data,
+                  pressure-test the findings, and stand behind every insight
+                  and recommendation.
+                </p>
+                <p>
+                  Your team gets senior expert oversight and judgment
+                  throughout the engagement.
+                </p>
+              </div>
+            </div>
           </div>
-          <div class="how__lead reveal">
-            <p class="how__num" data-count-to="1" data-pad="2">01</p>
-            <h3 class="how__heading">Led by Senior Life Sciences Experts</h3>
-          </div>
-        </div>
 
-        <div class="how__row how__row--reverse">
-          <div class="how__copy reveal">
-            <p>
-              AI agents execute and iterate across the research workflow —
-              building context, developing design materials, coordinating
-              fieldwork, analyzing data, testing hypotheses, and
-              synthesizing findings.
-            </p>
-            <p>
-              Our experts direct those workflows, challenging what emerges,
-              and applying the judgment needed to distinguish an
-              interesting pattern from an insight that should drive a
-              decision.
-            </p>
-            <p>
-              The result is senior-led research amplified by AI: greater
-              depth, more iteration, and faster execution.
-            </p>
+          <div class="how__card reveal" tabindex="0" role="button" aria-expanded="false" aria-label="Made Efficient Through Agentic Workflows — flip for details">
+            <div class="how__card-inner">
+              <div class="how__card-face how__card-face--front">
+                <p class="how__card-num" data-count-to="2" data-pad="2">02</p>
+                <h3 class="how__card-heading">Made Efficient Through Agentic Workflows</h3>
+                <p class="how__card-hint">Tap to explore →</p>
+              </div>
+              <div class="how__card-face how__card-face--back" aria-hidden="true">
+                <h4 class="how__card-back-heading">Made Efficient Through Agentic Workflows</h4>
+                <p>
+                  AI agents execute and iterate across the research workflow
+                  — building context, developing design materials,
+                  coordinating fieldwork, analyzing data, testing
+                  hypotheses, and synthesizing findings.
+                </p>
+                <p>
+                  Our experts direct those workflows, challenging what
+                  emerges, and applying the judgment needed to distinguish
+                  an interesting pattern from an insight that should drive a
+                  decision.
+                </p>
+                <p>
+                  The result is senior-led research amplified by AI: greater
+                  depth, more iteration, and faster execution.
+                </p>
+              </div>
+            </div>
           </div>
-          <div class="how__lead reveal">
-            <p class="how__num" data-count-to="2" data-pad="2">02</p>
-            <h3 class="how__heading">Made Efficient Through Agentic Workflows</h3>
-          </div>
-        </div>
 
-        <div class="how__row">
-          <div class="how__copy reveal">
-            <p>
-              We've built a research toolkit designed to get deeper, higher
-              quality insights from every respondent — from AI-moderated
-              interviews that probe intelligently and adapt in real time,
-              to conversational surveys that uncover richer responses at
-              scale.
-            </p>
-            <p>
-              The advantage isn't simply having more methods. It's knowing
-              which one will produce the strongest evidence for the
-              question at hand and combining them with traditional tools
-              when the answer demands it.
-            </p>
-            <p>
-              The result is flexibility to match the business question and
-              the depth to uncover what others miss.
-            </p>
-          </div>
-          <div class="how__lead reveal">
-            <p class="how__num" data-count-to="3" data-pad="2">03</p>
-            <h3 class="how__heading">Fielded Through the Method the Question Demands</h3>
+          <div class="how__card reveal" tabindex="0" role="button" aria-expanded="false" aria-label="Fielded Through the Method the Question Demands — flip for details">
+            <div class="how__card-inner">
+              <div class="how__card-face how__card-face--front">
+                <p class="how__card-num" data-count-to="3" data-pad="2">03</p>
+                <h3 class="how__card-heading">Fielded Through the Method the Question Demands</h3>
+                <p class="how__card-hint">Tap to explore →</p>
+              </div>
+              <div class="how__card-face how__card-face--back" aria-hidden="true">
+                <h4 class="how__card-back-heading">Fielded Through the Method the Question Demands</h4>
+                <p>
+                  We've built a research toolkit designed to get deeper,
+                  higher quality insights from every respondent — from
+                  AI-moderated interviews that probe intelligently and adapt
+                  in real time, to conversational surveys that uncover
+                  richer responses at scale.
+                </p>
+                <p>
+                  The advantage isn't simply having more methods. It's
+                  knowing which one will produce the strongest evidence for
+                  the question at hand and combining them with traditional
+                  tools when the answer demands it.
+                </p>
+                <p>
+                  The result is flexibility to match the business question
+                  and the depth to uncover what others miss.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -976,6 +1046,28 @@
         );
         spySections.forEach(function (s) { spyObserver.observe(s); });
       }
+
+      // How We Work flip cards
+      var flipCards = Array.prototype.slice.call(document.querySelectorAll(".how__card"));
+      flipCards.forEach(function (card) {
+        var front = card.querySelector(".how__card-face--front");
+        var back = card.querySelector(".how__card-face--back");
+        function setFlipped(flipped) {
+          card.classList.toggle("is-flipped", flipped);
+          card.setAttribute("aria-expanded", flipped ? "true" : "false");
+          if (front) { front.setAttribute("aria-hidden", flipped ? "true" : "false"); }
+          if (back) { back.setAttribute("aria-hidden", flipped ? "false" : "true"); }
+        }
+        card.addEventListener("click", function () {
+          setFlipped(!card.classList.contains("is-flipped"));
+        });
+        card.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setFlipped(!card.classList.contains("is-flipped"));
+          }
+        });
+      });
     })();
   </script>
 </body>
