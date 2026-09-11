@@ -1,12 +1,14 @@
-"""Shared moderator "brain": Claude decides what the moderator says next.
+"""Shared moderator "brain": decides what the moderator says next.
 
 Both pipelines call `next_utterance()` with the same system prompt and the
 same growing transcript, so any difference in the resulting session is
 attributable to the voice layer (ASR/TTS/turn-taking), not the reasoning.
+
+Backend is swappable via MODERATOR_BACKEND=anthropic|openai (default
+anthropic) -- e.g. to test whether GPT-Live's client delegation behaves
+differently when the backend it's handing off to is also an OpenAI model.
 """
 import os
-
-from anthropic import Anthropic
 
 from common.interview_guide import (
     CLOSING_SCRIPT,
@@ -17,7 +19,9 @@ from common.interview_guide import (
     TARGET_DURATION_MINUTES,
 )
 
-MODEL = os.environ.get("MODERATOR_MODEL", "claude-sonnet-5")
+BACKEND = os.environ.get("MODERATOR_BACKEND", "anthropic").lower()
+MODEL_ANTHROPIC = os.environ.get("MODERATOR_MODEL", "claude-sonnet-5")
+MODEL_OPENAI = os.environ.get("MODERATOR_MODEL_OPENAI", "gpt-5.6-terra")
 
 
 def _format_guide() -> str:
@@ -106,11 +110,37 @@ def _pacing_note(elapsed_seconds: float) -> str:
 _client = None
 
 
-def _get_client() -> Anthropic:
+def _get_client():
     global _client
     if _client is None:
-        _client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        if BACKEND == "openai":
+            from openai import OpenAI
+
+            _client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+        else:
+            from anthropic import Anthropic
+
+            _client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
     return _client
+
+
+def _call_anthropic(system: str, messages: list[dict]) -> str:
+    response = _get_client().messages.create(
+        model=MODEL_ANTHROPIC,
+        max_tokens=200,
+        system=system,
+        messages=messages,
+    )
+    return "".join(block.text for block in response.content if block.type == "text").strip()
+
+
+def _call_openai(system: str, messages: list[dict]) -> str:
+    response = _get_client().chat.completions.create(
+        model=MODEL_OPENAI,
+        max_tokens=200,
+        messages=[{"role": "system", "content": system}, *messages],
+    )
+    return (response.choices[0].message.content or "").strip()
 
 
 def next_utterance(transcript: list[dict], elapsed_seconds: float = 0.0) -> str:
@@ -128,11 +158,8 @@ def next_utterance(transcript: list[dict], elapsed_seconds: float = 0.0) -> str:
         {"role": "assistant" if t["role"] == "moderator" else "user", "content": t["text"]}
         for t in transcript
     ]
+    system = SYSTEM_PROMPT + _pacing_note(elapsed_seconds)
 
-    response = _get_client().messages.create(
-        model=MODEL,
-        max_tokens=200,
-        system=SYSTEM_PROMPT + _pacing_note(elapsed_seconds),
-        messages=messages,
-    )
-    return "".join(block.text for block in response.content if block.type == "text").strip()
+    if BACKEND == "openai":
+        return _call_openai(system, messages)
+    return _call_anthropic(system, messages)
