@@ -446,6 +446,14 @@
   .story__stat:last-child { border-bottom: 1px solid var(--border); }
 
   .story__stat-value {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 6px 10px;
+    margin: 0 0 10px;
+  }
+
+  .story__stat-num {
     font-family: var(--mono);
     font-weight: 700;
     color: var(--muted);
@@ -453,7 +461,13 @@
     letter-spacing: -0.01em;
     line-height: 1;
     font-size: clamp(28px, 3.2vw, 40px);
-    margin: 0 0 10px;
+  }
+
+  .story__stat-unit {
+    font-family: var(--sans);
+    font-weight: 600;
+    color: var(--ink);
+    font-size: clamp(16px, 1.8vw, 19px);
   }
 
   .story__stat-label {
@@ -660,17 +674,17 @@
             <p class="eyebrow">Track Record</p>
 
             <div class="story__stat">
-              <p class="story__stat-value">15 Years</p>
+              <p class="story__stat-value"><span class="story__stat-num">15</span><span class="story__stat-unit">Years</span></p>
               <p class="story__stat-label">Biopharma market research and commercial strategy experience</p>
             </div>
 
             <div class="story__stat">
-              <p class="story__stat-value">10 of the Top 20</p>
+              <p class="story__stat-value"><span class="story__stat-num">10</span><span class="story__stat-unit">of the Top 20</span></p>
               <p class="story__stat-label">Global biopharma companies advised</p>
             </div>
 
             <div class="story__stat">
-              <p class="story__stat-value">100+ Products</p>
+              <p class="story__stat-value"><span class="story__stat-num">100+</span><span class="story__stat-unit">Products</span></p>
               <p class="story__stat-label">Across commercial stages and therapeutic areas</p>
             </div>
           </div>
