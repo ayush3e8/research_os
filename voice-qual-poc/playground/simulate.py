@@ -29,6 +29,7 @@ import os
 import wave
 from pathlib import Path
 
+import numpy as np
 import websockets
 from dotenv import load_dotenv
 
@@ -88,6 +89,25 @@ def _save_wav(path: Path, pcm_bytes: bytes) -> None:
         wf.writeframes(pcm_bytes)
 
 
+def _mix_chunks(duration_s: float, *chunk_lists: list[tuple[float, bytes]]) -> bytes:
+    """Lays each (t_offset, pcm16_bytes) chunk into one shared timeline at
+    its real capture time and sums overlapping samples (clipped) -- a
+    proper single-track "call recording" rather than one file per speaker
+    concatenated with no regard for timing or overlap. Overlaps (e.g. a
+    real interruption) are audible as such, which is useful in its own right."""
+    total_samples = int(duration_s * SAMPLE_RATE) + SAMPLE_RATE  # pad a bit
+    mix = np.zeros(total_samples, dtype=np.int32)
+    for chunks in chunk_lists:
+        for t_offset, raw in chunks:
+            start = max(int(t_offset * SAMPLE_RATE), 0)
+            samples = np.frombuffer(raw, dtype=np.int16).astype(np.int32)
+            end = start + len(samples)
+            if end > len(mix):
+                mix = np.concatenate([mix, np.zeros(end - len(mix), dtype=np.int32)])
+            mix[start:end] += samples
+    return np.clip(mix, -32768, 32767).astype(np.int16).tobytes()
+
+
 async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -> dict:
     emit = on_event or _default_emit
 
@@ -98,8 +118,8 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
     respondent_view: list[dict] = []  # fed to the respondent LLM
     pending_respondent_utterances: list[str] = []
     buf = TranscriptBuffer()
-    moderator_audio = bytearray()
-    respondent_audio = bytearray()
+    moderator_chunks: list[tuple[float, bytes]] = []  # (t_offset, pcm16 bytes)
+    respondent_chunks: list[tuple[float, bytes]] = []
 
     debug_log = PLAYGROUND_DIR / f"sim_debug_{int(log.started_at)}.jsonl"
     transcript_path = PLAYGROUND_DIR / f"sim_{int(log.started_at)}.json"
@@ -240,7 +260,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                     except Exception as e:
                         await emit({"type": "error", "text": f"TTS error: {e!r}"})
                         continue
-                    respondent_audio.extend(audio)
+                    respondent_chunks.append((clock.now(), audio))
                     state["respondent_speaking"] = True
                     try:
                         await _stream_audio(ws, audio)
@@ -314,7 +334,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
 
                 elif etype == "session.output_audio.delta":
                     state["last_audio_time"] = clock.now()
-                    moderator_audio.extend(base64.b64decode(event["delta"]))
+                    moderator_chunks.append((clock.now(), base64.b64decode(event["delta"])))
 
                 elif etype == "session.delegation.created":
                     asyncio.create_task(handle_delegation(event["delegation"]["id"], clock.now()))
@@ -338,16 +358,16 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
             log.meta["delegation_count"] = delegation_count
             log.meta["ended_reason"] = ended_reason
             path = log.save()
-            moderator_wav = PLAYGROUND_DIR / f"sim_{int(log.started_at)}_moderator.wav"
-            respondent_wav = PLAYGROUND_DIR / f"sim_{int(log.started_at)}_respondent.wav"
-            _save_wav(moderator_wav, bytes(moderator_audio))
-            _save_wav(respondent_wav, bytes(respondent_audio))
+            conversation_wav = PLAYGROUND_DIR / f"sim_{int(log.started_at)}_conversation.wav"
+            has_audio = bool(moderator_chunks or respondent_chunks)
+            if has_audio:
+                mixed = _mix_chunks(clock.now(), moderator_chunks, respondent_chunks)
+                _save_wav(conversation_wav, mixed)
 
     summary = {
         "transcript_path": str(path),
         "debug_log_path": str(debug_log),
-        "moderator_wav": str(moderator_wav) if moderator_audio else None,
-        "respondent_wav": str(respondent_wav) if respondent_audio else None,
+        "conversation_wav": str(conversation_wav) if has_audio else None,
         "delegation_count": delegation_count,
         "duration_seconds": clock.now(),
         "ended_reason": ended_reason,

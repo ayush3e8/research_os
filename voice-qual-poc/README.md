@@ -151,9 +151,11 @@ Design notes:
   output is still saved (`meta.raw_participant_transcript`) if you want to
   check transcription accuracy on the side.
 - Each run saves a transcript json + debug jsonl (same format as the human
-  pipeline) under `transcripts/playground/`, plus two `.wav` files (GPT-Live's
-  actual voice output, and the synthetic respondent's) so you can listen to
-  a run afterward instead of only reading it.
+  pipeline) under `transcripts/playground/`, plus one merged
+  `sim_<timestamp>_conversation.wav` — both sides mixed onto one timeline
+  at their real capture times (not just concatenated), so a real
+  interruption is actually audible as overlapping audio, not silently
+  dropped. Listen to a run afterward instead of only reading it.
 - CLI-only mode also works without the browser: `python -m playground.simulate --n 5 --minutes 3`.
 - This intentionally duplicates some of `pipelines/gpt_live/run.py`'s
   session/delegation logic rather than sharing it, since the two scripts'
