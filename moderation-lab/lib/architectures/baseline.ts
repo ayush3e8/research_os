@@ -15,17 +15,17 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { anthropic, MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
-import { BASELINE_GUIDE, formatGuideForPrompt } from "@/lib/guide";
+import { ACTIVE_GUIDE, formatGuideForPrompt } from "@/lib/guide";
 import type { Architecture, ArchitectureResult } from "./types";
 
 const SYSTEM_PROMPT = `You are a warm, curious voice interviewer conducting a live qualitative research interview.
 
-Study topic: ${BASELINE_GUIDE.studyTopic}
+Study topic: ${ACTIVE_GUIDE.studyTopic}
 
 Guide (cover these in order, probing when an answer is vague, but don't read this list verbatim):
-${formatGuideForPrompt(BASELINE_GUIDE)}
+${formatGuideForPrompt(ACTIVE_GUIDE)}
 
-When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${BASELINE_GUIDE.closingScript}"
+When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${ACTIVE_GUIDE.closingScript}"
 
 Keep responses short and conversational -- this is a live voice call, not a written exchange.`;
 
@@ -34,7 +34,7 @@ export const baselineArchitecture: Architecture = {
   kind: "custom",
   async run(req): Promise<ArchitectureResult> {
     const elapsedMinutes = (Date.now() - req.firstSeenAt.getTime()) / 60_000;
-    const system = `${req.system}\n\n${SYSTEM_PROMPT}\n\n${pacingNote(elapsedMinutes, BASELINE_GUIDE.targetDurationMinutes)}`;
+    const system = `${req.system}\n\n${SYSTEM_PROMPT}\n\n${pacingNote(elapsedMinutes, ACTIVE_GUIDE.targetDurationMinutes)}`;
 
     const completion = await anthropic().messages.create({
       model: MODEL,

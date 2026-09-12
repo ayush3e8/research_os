@@ -2,15 +2,21 @@
  * Interview guide content, as plain TypeScript (not a DB table) -- matches
  * the Python project's precedent (common/guides/*.py) and keeps guides
  * versioned with the code rather than requiring a migration to add one.
- * Only one guide exists for now (the bare-minimum vertical slice); adding
- * more later is just adding another export and a lookup key, same pattern
- * as INTERVIEW_GUIDE in the Python project.
+ * Two guides exist: `everyday` (default) is a simple, personal topic
+ * (grocery shopping / meal planning) anyone can be genuinely interviewed on
+ * on the spot -- for testing whether the moderator *feels* good without a
+ * tester having to act out a persona, which is its own confound.
+ * `biopharma` is the real target-domain topic, for testing against actual
+ * personas later. Select via the GUIDE env var (GUIDE=biopharma to switch);
+ * same pattern as INTERVIEW_GUIDE in the Python project. Adding a third
+ * guide is just adding another export and a case in ACTIVE_GUIDE below.
  *
- * Deliberately given real texture (a forced-choice, a rating-then-why, an
- * open question designed to surface an unplanned thread) rather than three
- * generic questions -- a thin guide makes every architecture look shallow
- * regardless of how well it actually reasons, since there's nothing worth
- * probing into. Still a ~10-minute conversation, not an elaborate one.
+ * Both are deliberately given real texture (a forced-choice, a
+ * rating-then-why, an open question designed to surface an unplanned
+ * thread) rather than generic questions -- a thin guide makes every
+ * architecture look shallow regardless of how well it actually reasons,
+ * since there's nothing worth probing into. Still a ~10-minute
+ * conversation, not an elaborate one.
  */
 export type GuideQuestion = {
   topic: string;
@@ -33,7 +39,7 @@ export type Guide = {
   questions: GuideQuestion[];
 };
 
-export const BASELINE_GUIDE: Guide = {
+export const BIOPHARMA_GUIDE: Guide = {
   studyTopic:
     "How biopharma market-research teams currently run qualitative interviews, and where AI could help.",
   targetDurationMinutes: 10,
@@ -109,6 +115,85 @@ export const BASELINE_GUIDE: Guide = {
     },
   ],
 };
+
+export const EVERYDAY_GUIDE: Guide = {
+  studyTopic: "How people decide what to eat day-to-day — grocery shopping, meal planning, and cooking habits.",
+  targetDurationMinutes: 10,
+  openingScript:
+    "Hi, thanks for chatting with me today. I want to understand how you actually handle food and " +
+    "groceries in a normal week — no wrong answers, I'm just curious how it really works for you. " +
+    "Ready to dive in?",
+  closingScript:
+    "This was genuinely interesting, thank you for walking me through all of that. That's everything " +
+    "I wanted to cover — have a great rest of your day.",
+  questions: [
+    {
+      topic: "warm-up",
+      ask: "Tell me about your week so far from a food standpoint — mostly cooking, ordering in, a mix?",
+      targetMinutes: 1.5,
+      probes: ["What did you actually eat yesterday?", "Is that a pretty typical day for you?"],
+      note: "Quick warm-up -- get something concrete and specific on the table early.",
+    },
+    {
+      topic: "current process",
+      ask: "Walk me through how you actually decide what to buy or make in a typical week.",
+      targetMinutes: 2,
+      probes: [
+        "Do you plan ahead or figure it out day to day?",
+        "Where does most of the effort or time actually go?",
+        "How much of that is a real decision each time vs. just habit?",
+      ],
+    },
+    {
+      topic: "biggest friction point (forced choice)",
+      ask:
+        "If you had to pick just one — is the bigger friction point for you the cost, the time it takes, " +
+        "or just not knowing what you want? Pick one.",
+      targetMinutes: 2,
+      probes: [
+        "Why that one over the other two?",
+        "Tell me about a specific time that was actually annoying.",
+        "What would 'fixed' look like for you?",
+      ],
+      note: "Forced-choice on purpose -- a vague 'a bit of everything' answer isn't a real answer, worth pushing past.",
+    },
+    {
+      topic: "satisfaction (rating + why)",
+      ask: "On a scale of 1 to 10, how satisfied are you with how you currently handle food and groceries?",
+      targetMinutes: 1.5,
+      rating: {
+        prompt: "How satisfied are you with how you currently handle food and groceries?",
+        scale: "1 (not at all) to 10 (couldn't be better)",
+      },
+      probes: ["Why that number and not two points higher?", "What would move it up by even one point?"],
+      note: "Get the number, then immediately probe the 'why' -- the number alone isn't the data point that matters.",
+    },
+    {
+      topic: "unplanned thread (open-ended)",
+      ask: "Tell me about a specific time your food plan for the week completely fell apart, or a meal that really surprised you.",
+      targetMinutes: 1.5,
+      probes: ["What actually happened?", "Did it change how you do things afterward?"],
+      note:
+        "Deliberately open-ended -- whatever story comes up here is worth actually pulling on for a turn " +
+        "or two before moving on, even though it isn't itself a scripted question.",
+    },
+    {
+      topic: "forward-looking",
+      ask: "If you could wave a magic wand and fix one part of how you handle food and groceries, what would it be?",
+      targetMinutes: 1.5,
+      probes: ["Why that, specifically?", "Have you actually tried anything to fix it already?"],
+    },
+  ],
+};
+
+const GUIDES: Record<string, Guide> = {
+  everyday: EVERYDAY_GUIDE,
+  biopharma: BIOPHARMA_GUIDE,
+};
+
+/** Which guide the app actually uses -- GUIDE=biopharma to switch, defaults
+ * to the simple, personal topic anyone can be genuinely interviewed on. */
+export const ACTIVE_GUIDE: Guide = GUIDES[process.env.GUIDE ?? "everyday"] ?? EVERYDAY_GUIDE;
 
 export function formatGuideForPrompt(guide: Guide): string {
   return guide.questions

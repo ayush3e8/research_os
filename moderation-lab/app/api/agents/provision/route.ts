@@ -9,7 +9,7 @@ import { db } from "@/db";
 import { architectureAgents } from "@/db/schema";
 import { createAgent, getOrCreateWebhookSecretId } from "@/lib/elevenlabs";
 import { getArchitecture } from "@/lib/architectures/registry";
-import { BASELINE_GUIDE } from "@/lib/guide";
+import { ACTIVE_GUIDE } from "@/lib/guide";
 
 const DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"; // ElevenLabs' standard demo voice; swap once you pick one
 
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     agentId = await createAgent({
       name: `moderation-lab: ${name}`,
       systemPrompt: architecture.systemPromptForNativeAgent!(),
-      firstMessage: BASELINE_GUIDE.openingScript,
+      firstMessage: ACTIVE_GUIDE.openingScript,
       voiceId: DEFAULT_VOICE_ID,
       llm: { kind: "native", model: "claude-sonnet-5" },
     });
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     agentId = await createAgent({
       name: `moderation-lab: ${name}`,
       systemPrompt: "", // the custom-LLM webhook builds its own system prompt per architecture
-      firstMessage: BASELINE_GUIDE.openingScript,
+      firstMessage: ACTIVE_GUIDE.openingScript,
       voiceId: DEFAULT_VOICE_ID,
       llm: {
         kind: "custom",
