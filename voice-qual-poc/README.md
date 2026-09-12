@@ -129,6 +129,17 @@ the live API:
     verified against a fresh live run yet, so if the loop still happens,
     the debug jsonl will show whether the nudge fired and whether GPT-Live
     still didn't delegate afterward.
+- `session.commentary.append` has no proactive form — it requires a real,
+  live `delegation_id`. Sending one with `delegation_id: null` for the
+  opening line (the original approach) gets rejected outright with
+  `missing_required_parameter: delegation_id`; the rest of the call
+  continues fine since that's just one rejected send, but the opening line
+  never gets spoken. Fixed in `send_opening()` (both `pipelines/gpt_live/run.py`
+  and `playground/simulate.py`): the opening now goes out via
+  `session.instructions.append` telling GPT-Live to say it verbatim itself,
+  and gets folded into Claude's context the normal way — through the same
+  "own speech" mechanism in `handle_delegation` that already handles any
+  of GPT-Live's unsolicited speech — once the first real delegation fires.
 - There's no documented "finished speaking" event, so the auto hang-up
   (`close_after_speaking` in `run.py`) waits for output audio to go quiet
   for ~1.2s as a heuristic once Claude delivers the closing line. Tune that

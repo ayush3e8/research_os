@@ -23,14 +23,13 @@ SAMPLE_RATE = 24000
 CHUNK_MS = 100
 CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_MS // 1000
 
-# Diagnostic toggle: every real test past the very first one has shown
-# GPT-Live delegating rarely-to-never regardless of instructions. The one
-# thing that first run *didn't* have was a proactive commentary.append with
-# delegation_id=null for the opening line -- set this false to isolate
-# whether that's teaching the model content can appear outside delegation
-# and suppressing its own inclination to hand off for the rest of the
-# session. When false, the opening line is only spoken once the
-# participant speaks first and a real delegation fires, same as run 1.
+# Diagnostic toggle for whether the moderator speaks first. Originally
+# implemented as a proactive commentary.append with delegation_id=null --
+# confirmed via a live "missing_required_parameter: delegation_id" error
+# that GPT-Live's API flatly rejects that (there's no reply-without-a-
+# delegation path), so send_opening() now steers GPT-Live to say the line
+# itself via session.instructions.append instead. Set this false to skip
+# the proactive opening and wait for the participant to speak first instead.
 PROACTIVE_OPENING = os.environ.get("GPT_LIVE_PROACTIVE_OPENING", "true").lower() != "false"
 
 
