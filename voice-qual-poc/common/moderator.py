@@ -137,7 +137,7 @@ def _call_anthropic(system: str, messages: list[dict]) -> str:
 def _call_openai(system: str, messages: list[dict]) -> str:
     response = _get_client().chat.completions.create(
         model=MODEL_OPENAI,
-        max_tokens=200,
+        max_completion_tokens=200,
         messages=[{"role": "system", "content": system}, *messages],
     )
     return (response.choices[0].message.content or "").strip()

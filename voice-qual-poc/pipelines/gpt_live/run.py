@@ -268,11 +268,19 @@ async def run() -> None:
                 log.add_turn(Turn("participant", pending, t_delegated, t_delegated))
                 buf.mark_consumed()
 
-            reply = await asyncio.to_thread(next_utterance, transcript, elapsed_seconds=t_delegated)
-            if not reply.strip():
-                # Rare, but seen in testing: retry once before falling back
-                # rather than sending an empty commentary.append.
+            try:
                 reply = await asyncio.to_thread(next_utterance, transcript, elapsed_seconds=t_delegated)
+                if not reply.strip():
+                    # Rare, but seen in testing: retry once before falling back
+                    # rather than sending an empty commentary.append.
+                    reply = await asyncio.to_thread(next_utterance, transcript, elapsed_seconds=t_delegated)
+            except Exception as e:
+                # A crash here used to leave the participant in dead air and
+                # only surface later as an unhelpful "Task exception was
+                # never retrieved" -- print it immediately and keep going
+                # with a safe fallback instead of losing the turn silently.
+                print(f"[handle_delegation error, falling back]: {e!r}")
+                reply = ""
             if not reply.strip():
                 reply = "Sorry, could you say that again?"
             await speak(reply, delegation_id=delegation_id, t_ref=t_delegated)
