@@ -36,7 +36,7 @@ def get_or_create_agent(
     first_message: str,
     voice_id: str,
     llm_model: str,
-    tts_model_id: str = "eleven_flash_v2",
+    tts_model_id: str = "eleven_v3_conversational",
 ) -> str:
     """Returns a cached agent_id for cache_key if we've created one before,
     otherwise creates a new agent and remembers it in .elevenlabs_agents.json

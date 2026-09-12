@@ -149,7 +149,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
         first_message="",  # waits for the moderator to speak first
         voice_id=os.environ["ELEVENLABS_RESPONDENT_VOICE_ID"],
         llm_model=os.environ.get("RESPONDENT_MODEL", "claude-sonnet-5"),
-        tts_model_id=os.environ.get("ELEVENLABS_TTS_MODEL_ID", "eleven_flash_v2"),
+        tts_model_id=os.environ.get("ELEVENLABS_TTS_MODEL_ID", "eleven_v3_conversational"),
     )
     agent_session = AgentSession(agent_id)
     await agent_session.connect()

@@ -60,7 +60,7 @@ async def run() -> None:
         first_message=OPENING_SCRIPT,
         voice_id=os.environ["ELEVENLABS_VOICE_ID"],
         llm_model=os.environ.get("MODERATOR_MODEL", "claude-sonnet-5"),
-        tts_model_id=os.environ.get("ELEVENLABS_TTS_MODEL_ID", "eleven_flash_v2"),
+        tts_model_id=os.environ.get("ELEVENLABS_TTS_MODEL_ID", "eleven_v3_conversational"),
     )
     agent = AgentSession(agent_id)
     await agent.connect()

@@ -167,7 +167,16 @@ expected. A few things worth knowing regardless:
 - Agents are created once and cached in `.elevenlabs_agents.json`
   (gitignored) so repeat runs reuse the same agent instead of cluttering
   your ElevenLabs dashboard with a fresh one each time. Delete an entry to
-  force recreation after editing that agent's prompt.
+  force recreation after editing that agent's prompt **or its TTS model** —
+  changing `ELEVENLABS_TTS_MODEL_ID` alone does nothing to an
+  already-created agent.
+- TTS model: `ELEVENLABS_TTS_MODEL_ID` defaults to `eleven_v3_conversational`
+  — ElevenLabs' most expressive real-time model for Conversational AI
+  agents (~280ms latency), used for both the Pipeline A moderator agent
+  and the playground's respondent agent. Plain `eleven_v3` is a
+  non-realtime model (Text-to-Dialogue API) and won't work over this
+  WebSocket flow. Drop to `eleven_flash_v2_5` if you want to isolate voice
+  quality from latency effects (~75ms) instead.
 
 ## Playground: automated GPT-Live vs. synthetic respondent
 
