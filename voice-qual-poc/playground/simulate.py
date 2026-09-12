@@ -207,7 +207,18 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                     # apparently keeps the audio channel open well past when
                     # it's actually said anything new, so audio timing alone
                     # can never signal "done talking" here.
-                    quiet_long_enough = (clock.now() - state["last_transcript_time"]) > 0.6
+                    #
+                    # 0.6s was too eager once the transcript signal actually
+                    # worked: a real run showed the respondent barging in
+                    # during a normal mid-sentence pause, GPT-Live correctly
+                    # treating that as an interruption (per its own
+                    # interruption policy) and cutting itself off -- the
+                    # respondent then reacted to the genuinely truncated
+                    # question as "bad connection," which was a reasonable
+                    # read of what was actually happening to it. Since
+                    # transcript deltas really do stop for good when GPT-Live
+                    # is done (unlike audio), we can afford to be patient.
+                    quiet_long_enough = (clock.now() - state["last_transcript_time"]) > 1.4
                     if not (new_moderator_text and quiet_long_enough):
                         continue
 
