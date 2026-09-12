@@ -1,0 +1,34 @@
+name: moderation-lab CI
+
+# Runs on every push/PR that touches moderation-lab/ -- typecheck + build,
+# so a broken commit is caught automatically instead of surfacing only
+# when Vercel tries (and fails) to deploy it. Uses dummy env vars: none of
+# these calls hit a real API or database, so no secrets are needed here.
+on:
+  push:
+    branches: ["**"]
+    paths: ["moderation-lab/**"]
+  pull_request:
+    paths: ["moderation-lab/**"]
+
+jobs:
+  typecheck-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: moderation-lab
+    env:
+      DATABASE_URL: "postgres://user:pass@localhost:5432/db"
+      ANTHROPIC_API_KEY: "sk-ci-placeholder"
+      ELEVENLABS_API_KEY: "ci-placeholder"
+      CUSTOM_LLM_WEBHOOK_SECRET: "ci-placeholder"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: moderation-lab/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx next build
