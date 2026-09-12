@@ -209,10 +209,14 @@ python -m playground.server
 Then open `playground/static/index.html` directly in a browser (double-click
 it, or open its `file://` path) — it connects to `ws://localhost:8765`.
 Everything runs locally; no API keys ever reach the browser, only the local
-page talks to the local server. From there: set a time cap (minutes), then
-"Run 1 simulation" or "Run batch of N" — the live transcript streams in as
-it happens, color-coded by speaker, with a summary (delegation count,
-duration, how it ended) once each run finishes.
+page talks to the local server. From there: pick a **mode** (GPT-Live as
+moderator, the default, or the role-swapped direction below), set a time
+cap (minutes), then "Run 1 simulation" or "Run batch of N" — the live
+transcript streams in as it happens, color-coded by speaker, with a
+summary (delegation count, duration, how it ended) once each run finishes.
+The same server (`playground/server.py`) drives both modes — a `mode`
+field on each run request picks `playground.simulate.run_session` or
+`playground.simulate_swapped.run_session`.
 
 Design notes:
 - The respondent persona is selected via `RESPONDENT_PERSONA` in `.env`

@@ -52,6 +52,10 @@
     width: 60px; padding: 4px 6px; border-radius: 6px;
     border: 1px solid var(--border); background: var(--bg); color: var(--text);
   }
+  select {
+    padding: 4px 6px; border-radius: 6px; font-size: 13px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
   button {
     padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
     background: var(--moderator); color: white; font-size: 13px; cursor: pointer;
@@ -78,10 +82,16 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>GPT-Live ⇄ Synthetic Respondent</h1>
+  <h1>GPT-Live ⇄ ElevenLabs Agent Playground</h1>
   <div id="status" class="status disconnected">connecting to ws://localhost:8765…</div>
 
   <div class="controls">
+    <label>mode
+      <select id="mode">
+        <option value="normal">GPT-Live moderator ⇄ ElevenLabs respondent</option>
+        <option value="swapped">ElevenLabs moderator ⇄ GPT-Live respondent (swapped)</option>
+      </select>
+    </label>
     <label>cap (min) <input id="minutes" type="number" value="5" min="1" max="30"></label>
     <button id="runOne">Run 1 simulation</button>
     <label>batch of <input id="batchN" type="number" value="5" min="1" max="50"></label>
@@ -100,6 +110,12 @@ const runOneBtn = document.getElementById('runOne');
 const runBatchBtn = document.getElementById('runBatch');
 
 let ws;
+let currentMode = 'normal';
+
+const ROLE_LABELS = {
+  normal: { moderator: 'GPT-Live (Claude-delegated)', participant: 'Synthetic respondent (ElevenLabs Agent)' },
+  swapped: { moderator: 'ElevenLabs Agent (moderator)', participant: 'GPT-Live (Claude-delegated respondent)' },
+};
 
 function connect() {
   ws = new WebSocket('ws://localhost:8765');
@@ -122,7 +138,7 @@ function addTurn(role, text) {
   div.className = 'turn ' + role;
   const label = document.createElement('span');
   label.className = 'role';
-  label.textContent = role === 'moderator' ? 'GPT-Live (Claude-delegated)' : 'Synthetic respondent';
+  label.textContent = ROLE_LABELS[currentMode][role];
   div.appendChild(label);
   div.appendChild(document.createTextNode(text));
   transcriptEl.appendChild(div);
@@ -145,10 +161,11 @@ function setRunning(running) {
 function handleEvent(event) {
   switch (event.type) {
     case 'run_started':
+      currentMode = event.mode || 'normal';
       transcriptEl.innerHTML = '';
       summaryEl.style.display = 'none';
       setRunning(true);
-      addSysline('info', '— simulation started —');
+      addSysline('info', '— simulation started (' + currentMode + ') —');
       break;
     case 'batch_progress':
       addSysline('info', `— batch run ${event.current}/${event.total} —`);
@@ -172,11 +189,16 @@ function handleEvent(event) {
 }
 
 runOneBtn.onclick = () => {
-  ws.send(JSON.stringify({ type: 'run', minutes: parseFloat(document.getElementById('minutes').value) }));
+  ws.send(JSON.stringify({
+    type: 'run',
+    mode: document.getElementById('mode').value,
+    minutes: parseFloat(document.getElementById('minutes').value),
+  }));
 };
 runBatchBtn.onclick = () => {
   ws.send(JSON.stringify({
     type: 'run_batch',
+    mode: document.getElementById('mode').value,
     n: parseInt(document.getElementById('batchN').value, 10),
     minutes: parseFloat(document.getElementById('minutes').value),
   }));
