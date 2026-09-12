@@ -239,7 +239,6 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                     log_raw_event(debug_log, "send", close_event)
                     return
 
-        asyncio.create_task(send_opening())
         respondent_task = asyncio.create_task(respondent_loop())
         watchdog_task = asyncio.create_task(watchdog())
 
@@ -251,6 +250,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
 
                 if etype == "session.started":
                     await emit({"type": "info", "text": "session started"})
+                    asyncio.create_task(send_opening())
 
                 elif etype == "session.input_transcript.delta":
                     buf.add_input_delta(event.get("delta", ""))
