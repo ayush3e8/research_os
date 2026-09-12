@@ -105,7 +105,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
     transcript_path = PLAYGROUND_DIR / f"sim_{int(log.started_at)}.json"
 
     headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}
-    state = {"last_audio_time": clock.now(), "closing": False}
+    state = {"last_audio_time": clock.now(), "closing": False, "respondent_speaking": False}
     stop_event = asyncio.Event()
     delegation_count = 0
     ended_reason = "unknown"
@@ -217,7 +217,11 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                         await emit({"type": "error", "text": f"TTS error: {e!r}"})
                         continue
                     respondent_audio.extend(audio)
-                    await _stream_audio(ws, audio)
+                    state["respondent_speaking"] = True
+                    try:
+                        await _stream_audio(ws, audio)
+                    finally:
+                        state["respondent_speaking"] = False
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:
@@ -226,6 +230,30 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                     # visible error at all.
                     await emit({"type": "error", "text": f"respondent_loop error: {e!r}"})
                     await asyncio.sleep(1.0)
+
+        async def idle_mic_feed() -> None:
+            """Stream continuous silent audio when the respondent isn't
+            talking -- a stand-in for how a real mic constantly provides
+            (near-)silent input even between turns. GPT-Live's own
+            turn-detection/audio pipeline is undocumented and reverse-
+            engineered throughout this project; this is a hypothesis that
+            it expects a continuous input stream to behave normally, not a
+            confirmed requirement."""
+            silent_chunk = b"\x00" * CHUNK_BYTES
+            while not stop_event.is_set():
+                if not state["respondent_speaking"]:
+                    try:
+                        await ws.send(
+                            json.dumps(
+                                {
+                                    "type": "session.input_audio.append",
+                                    "audio": base64.b64encode(silent_chunk).decode("ascii"),
+                                }
+                            )
+                        )
+                    except Exception:
+                        pass
+                await asyncio.sleep(CHUNK_MS / 1000)
 
         async def watchdog() -> None:
             nonlocal ended_reason
@@ -241,6 +269,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
 
         respondent_task = asyncio.create_task(respondent_loop())
         watchdog_task = asyncio.create_task(watchdog())
+        idle_mic_task = asyncio.create_task(idle_mic_feed())
 
         try:
             async for raw in ws:
@@ -278,6 +307,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
             stop_event.set()
             respondent_task.cancel()
             watchdog_task.cancel()
+            idle_mic_task.cancel()
             log.meta["raw_participant_transcript"] = buf.participant_text
             log.meta["raw_moderator_transcript"] = buf.moderator_text
             log.meta["delegation_count"] = delegation_count
