@@ -32,11 +32,7 @@ RULES_TEMPLATE = Template(Path(PROMPTS_DIR / "moderator_rules.txt").read_text())
 def _format_guide() -> str:
     lines = []
     for i, q in enumerate(QUESTIONS, 1):
-        parts = [f"{i}. [{q['topic']}, ~{q.get('target_minutes', '?')} min]"]
-        if q.get("verbatim"):
-            parts.append(f'Deliver verbatim, do not paraphrase: "{q["ask"]}"')
-        else:
-            parts.append(q["ask"])
+        parts = [f"{i}. [{q['topic']}, ~{q.get('target_minutes', '?')} min]", q["ask"]]
         if q.get("probes"):
             parts.append(f"(probes if needed: {'; '.join(q['probes'])})")
         if q.get("rating"):

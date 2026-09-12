@@ -3,10 +3,9 @@
 Respondent-facing title: Market Research Practices in Biopharma
 Status: approved (live paid pilot). Estimated length: 20 minutes.
 
-This is a sponsor-blind study — see GUARDRAILS. Items 9 and 11 are marked
-verbatim=True because their exact wording (the concept framing and the
-reveal) was legally/compliance reviewed; the moderator must not paraphrase
-them, only ask everything else conversationally.
+This is a sponsor-blind study — see GUARDRAILS. Compliance/disclosure is
+handled by a screener/consent form before the call, so nothing here needs
+verbatim delivery.
 """
 
 STUDY_TOPIC = (
@@ -102,7 +101,6 @@ QUESTIONS = [
     {
         "topic": "concept reaction (service framing)",
         "target_minutes": 2,
-        "verbatim": True,
         "ask": (
             "Let me describe something and get your honest reaction. Imagine a "
             "market research service where AI runs the process behind the scenes "
@@ -123,7 +121,6 @@ QUESTIONS = [
     {
         "topic": "reveal",
         "target_minutes": 2,
-        "verbatim": True,
         "ask": (
             "I want to tell you something directly: this conversation we're "
             "having right now was designed by an automated agentic system, is "

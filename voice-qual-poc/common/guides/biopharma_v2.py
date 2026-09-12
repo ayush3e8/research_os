@@ -86,7 +86,6 @@ QUESTIONS = [
     {
         "topic": "concept reaction (AI-native firm)",
         "target_minutes": 3,
-        "verbatim": True,
         "ask": (
             "I want to describe a concept and get your gut reaction. Imagine an "
             "AI-native biopharma market research firm where experienced "
@@ -133,7 +132,6 @@ QUESTIONS = [
     {
         "topic": "micro-IDI concept",
         "target_minutes": 2,
-        "verbatim": True,
         "ask": (
             "Here's a specific idea: instead of waiting until enough open "
             "questions pile up to justify a full study, you could run short "
@@ -145,7 +143,6 @@ QUESTIONS = [
     {
         "topic": "qual-plus-quant concept",
         "target_minutes": 2,
-        "verbatim": True,
         "ask": (
             "Another idea: conversational qual-plus-quant — one natural "
             "conversation that captures both structured ratings and rankings "
