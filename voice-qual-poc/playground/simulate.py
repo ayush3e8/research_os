@@ -192,9 +192,14 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
             respondent_consumed_upto = 0
             while not stop_event.is_set():
                 try:
-                    await asyncio.sleep(0.3)
+                    await asyncio.sleep(0.15)
                     new_moderator_text = buf.moderator_text[respondent_consumed_upto:].strip()
-                    quiet_long_enough = (clock.now() - state["last_audio_time"]) > 1.5
+                    # Kept short and polled fast: a real run showed the server
+                    # dropping the connection ~1-2s after GPT-Live stopped
+                    # speaking, while we'd sent nothing but silence the whole
+                    # call. The respondent needs to get real audio flowing
+                    # well inside that window, not after a leisurely pause.
+                    quiet_long_enough = (clock.now() - state["last_audio_time"]) > 0.6
                     if not (new_moderator_text and quiet_long_enough):
                         continue
 
