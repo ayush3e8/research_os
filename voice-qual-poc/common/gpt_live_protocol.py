@@ -4,6 +4,7 @@ pipelines/gpt_live/run.py (real mic/speaker) and playground/simulate.py
 (no sounddevice/numpy) so anything importing this doesn't need a real
 microphone or speaker to exist on the machine.
 """
+import asyncio
 import json
 import os
 import time
@@ -70,3 +71,45 @@ class TranscriptBuffer:
 
     def mark_moderator_consumed(self) -> None:
         self.moderator_consumed_upto = len(self.moderator_text)
+
+
+# Seen in testing: GPT-Live can go quiet on delegating for stretches even
+# with the delegation policy above in its instructions -- it fills a
+# participant's pause with its own backchannel/judgment instead. Left
+# unchecked this spirals (participant gets no real follow-up, repeats
+# themselves, notices the loop). This is a mitigation, not a fix for the
+# underlying behavior -- it just nudges GPT-Live back on track once it's
+# gone quiet on delegating for too long while the participant has said
+# something.
+STALL_SECONDS = float(os.environ.get("GPT_LIVE_STALL_SECONDS", "15"))
+
+
+async def delegation_stall_watchdog(ws, buf: TranscriptBuffer, clock, state: dict, debug_log: Path) -> None:
+    """Call as a background task once state["last_delegation_time"] exists
+    and is kept updated (set it at session start, and again every time
+    session.delegation.created fires). Sends a session.instructions.append
+    reminder -- session-wide steering, per OpenAI's delegation docs -- if
+    too long has passed since the last delegation while the participant has
+    said something GPT-Live hasn't handed off yet."""
+    nudged_since_last_delegation = False
+    while True:
+        await asyncio.sleep(5.0)
+        stalled = clock.now() - state["last_delegation_time"] > STALL_SECONDS
+        if stalled and buf.pending_participant_text() and not nudged_since_last_delegation:
+            nudge = {
+                "type": "session.instructions.append",
+                "content": (
+                    "You haven't delegated in a while even though the participant has said "
+                    "something. If they've paused at all -- even mid-thought or trailing off -- "
+                    "delegate now instead of backchanneling or prompting them to continue "
+                    "yourself; that judgment belongs to the backend."
+                ),
+            }
+            try:
+                await ws.send(json.dumps(nudge))
+                log_raw_event(debug_log, "send", nudge)
+            except Exception:
+                pass
+            nudged_since_last_delegation = True
+        elif not stalled:
+            nudged_since_last_delegation = False

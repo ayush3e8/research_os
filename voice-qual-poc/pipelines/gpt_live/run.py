@@ -41,6 +41,7 @@ from common.gpt_live_protocol import (
     VOICE,
     WS_URL,
     TranscriptBuffer,
+    delegation_stall_watchdog,
     log_raw_event,
 )
 from common.interview_guide import CLOSING_SCRIPT, STUDY_TOPIC
@@ -122,7 +123,7 @@ async def run() -> None:
                 out_stream.stop()
                 out_stream.close()
 
-        state = {"last_audio_time": clock.now(), "closing": False}
+        state = {"last_audio_time": clock.now(), "closing": False, "last_delegation_time": clock.now()}
 
         async def speak(content: str, delegation_id: str | None, t_ref: float) -> None:
             """Push a line to be spoken. delegation_id=None speaks proactively,
@@ -207,6 +208,7 @@ async def run() -> None:
         print("Connecting...\n")
         mic_stream.start()
         playback_task = asyncio.create_task(playback_loop())
+        stall_watchdog_task = asyncio.create_task(delegation_stall_watchdog(ws, buf, clock, state, debug_log))
 
         try:
             async for raw in ws:
@@ -235,6 +237,7 @@ async def run() -> None:
                 elif etype == "session.delegation.created":
                     delegation_id = event["delegation"]["id"]
                     print(f"[delegation received: {delegation_id}]")
+                    state["last_delegation_time"] = clock.now()
                     asyncio.create_task(handle_delegation(delegation_id, clock.now()))
 
                 elif etype == "session.closed":
@@ -247,6 +250,7 @@ async def run() -> None:
         except KeyboardInterrupt:
             pass
         finally:
+            stall_watchdog_task.cancel()
             mic_stream.stop()
             mic_stream.close()
             await audio_out_queue.put(None)

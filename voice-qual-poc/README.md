@@ -111,6 +111,24 @@ the live API:
   capture what was *actually* said (reconstructed from transcript deltas),
   separately from the `turns` list (which only captures Claude-authored
   content) — diff the two if a session feels off.
+  - A specific failure mode of this: the participant pauses mid-thought or
+    trails off (e.g. "we ended up meeting in the middle, honestly. We..."),
+    and instead of delegating, GPT-Live decides on its own that they're not
+    really finished and either backchannels ("Okay.", "Mm-hmm.") or
+    silently waits — Claude never gets a turn, so nothing new gets asked,
+    and the participant (getting no real follow-up) tends to repeat
+    themselves, sometimes noticing and naming the loop out loud. The
+    delegation policy in `prompts/gpt_live_instructions.txt` now says
+    explicitly that a pause like that is still GPT-Live's cue to delegate,
+    not to self-prompt or fill it with backchannel — and
+    `common/gpt_live_protocol.delegation_stall_watchdog` is a code-level
+    backstop: if `GPT_LIVE_STALL_SECONDS` (default 15) passes with no
+    delegation while the participant has said something, it sends a
+    one-off `session.instructions.append` reminder. This is a mitigation
+    for a real, recurring pattern, not a confirmed fix — it hasn't been
+    verified against a fresh live run yet, so if the loop still happens,
+    the debug jsonl will show whether the nudge fired and whether GPT-Live
+    still didn't delegate afterward.
 - There's no documented "finished speaking" event, so the auto hang-up
   (`close_after_speaking` in `run.py`) waits for output audio to go quiet
   for ~1.2s as a heuristic once Claude delivers the closing line. Tune that

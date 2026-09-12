@@ -48,6 +48,7 @@ from common.gpt_live_protocol import (
     VOICE,
     WS_URL,
     TranscriptBuffer,
+    delegation_stall_watchdog,
     log_raw_event,
 )
 from common.interview_guide import CLOSING_SCRIPT, STUDY_TOPIC
@@ -132,6 +133,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
     state = {
         "last_audio_time": clock.now(),
         "last_transcript_time": clock.now(),
+        "last_delegation_time": clock.now(),
         "closing": False,
         "respondent_speaking": False,
     }
@@ -314,6 +316,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
         agent_bridge_task = asyncio.create_task(agent_bridge_loop())
         watchdog_task = asyncio.create_task(watchdog())
         idle_mic_task = asyncio.create_task(idle_mic_feed())
+        stall_watchdog_task = asyncio.create_task(delegation_stall_watchdog(ws, buf, clock, state, debug_log))
 
         try:
             async for raw in ws:
@@ -341,6 +344,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                         await agent_session.send_audio_chunk(forwarded)
 
                 elif etype == "session.delegation.created":
+                    state["last_delegation_time"] = clock.now()
                     asyncio.create_task(handle_delegation(event["delegation"]["id"], clock.now()))
 
                 elif etype == "session.closed":
@@ -357,6 +361,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
             agent_bridge_task.cancel()
             watchdog_task.cancel()
             idle_mic_task.cancel()
+            stall_watchdog_task.cancel()
             await agent_session.close()
             log.meta["raw_participant_transcript"] = buf.participant_text
             log.meta["raw_moderator_transcript"] = buf.moderator_text
