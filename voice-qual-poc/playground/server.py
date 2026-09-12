@@ -25,6 +25,16 @@ _running = False
 
 
 async def _broadcast(event: dict) -> None:
+    # Always print server-side, regardless of whether a browser is
+    # connected -- a closed/refreshed tab used to mean anything that
+    # happened afterward (including errors) vanished silently.
+    if event["type"] == "turn":
+        print(f"{event['role'].upper()}: {event['text']}")
+    elif event["type"] in ("info", "error", "run_started", "batch_progress"):
+        print(f"[{event['type']}] {event}")
+    elif event["type"] == "session_ended":
+        print(f"[session_ended] {event['summary']}")
+
     if not _clients:
         return
     payload = json.dumps(event)
