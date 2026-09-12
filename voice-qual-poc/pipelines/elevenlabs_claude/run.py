@@ -1,152 +1,154 @@
-"""Pipeline A: push-to-talk moderator using Whisper (STT) + Claude (brain)
-+ ElevenLabs (TTS).
+"""Pipeline A: full-duplex moderator using an ElevenLabs Conversational AI
+Agent, with Claude selected as its native LLM.
 
-Turn-taking is manual (press Enter to talk, Enter again to stop) since this
-stack has no built-in duplex/VAD layer — that gap is itself one of the things
-worth comparing against GPT-Live-1's full-duplex handling.
+Replaces the earlier push-to-talk + Whisper STT + raw-TTS script.
+ElevenLabs' own agent runtime now handles ASR, turn-taking, calling Claude,
+and TTS as one hosted loop -- we just bridge real mic/speaker audio to it
+and log the resulting transcript. Nothing here needs a public endpoint;
+we connect out to ElevenLabs like an ordinary client.
+
+Caveat: since Claude is called by ElevenLabs' own runtime (not by our code
+the way GPT-Live's client delegation works), the per-turn pacing note that
+common/moderator.py normally injects dynamically isn't part of the agent's
+system prompt -- it's sent periodically as a "contextual_update" message
+instead (see pacing_updates() below). That mechanism is unverified against
+a live agent as of this writing; if pacing doesn't seem to influence
+behavior, check https://elevenlabs.io/docs/eleven-agents for whatever the
+current equivalent is.
 
 Usage:
     python -m pipelines.elevenlabs_claude.run
 """
-import io
+import asyncio
+import base64
+import json
 import os
 import sys
-import wave
 from pathlib import Path
 
 import numpy as np
-import requests
 import sounddevice as sd
 from dotenv import load_dotenv
-from openai import OpenAI
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from common.moderator import next_utterance
+from common.elevenlabs_agent import AgentSession, get_or_create_agent
+from common.interview_guide import CLOSING_SCRIPT, OPENING_SCRIPT
+from common.moderator import SYSTEM_PROMPT as MODERATOR_SYSTEM_PROMPT
+from common.moderator import _pacing_note
 from common.transcript_log import Clock, SessionLog, Turn
 
 load_dotenv()
 
-SAMPLE_RATE = 16000
-ELEVENLABS_VOICE_ID = os.environ.get("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
-STT_MODEL = os.environ.get("STT_MODEL", "whisper-1")
-
-openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+CHUNK_MS = 100
+PACING_UPDATE_SECONDS = 30
 
 
-def record_until_enter() -> np.ndarray:
-    print("  [recording... press Enter to stop]")
-    frames: list[np.ndarray] = []
-
-    def callback(indata, _frame_count, _time_info, _status):
-        frames.append(indata.copy())
-
-    with sd.InputStream(
-        samplerate=SAMPLE_RATE, channels=1, dtype="int16", callback=callback
-    ):
-        input()
-
-    if not frames:
-        return np.zeros((0,), dtype="int16")
-    return np.concatenate(frames).flatten()
-
-
-def transcribe(audio: np.ndarray) -> str:
-    buf = io.BytesIO()
-    with wave.open(buf, "wb") as wf:
-        wf.setnchannels(1)
-        wf.setsampwidth(2)
-        wf.setframerate(SAMPLE_RATE)
-        wf.writeframes(audio.tobytes())
-    buf.seek(0)
-    buf.name = "speech.wav"
-    result = openai_client.audio.transcriptions.create(model=STT_MODEL, file=buf)
-    return result.text.strip()
-
-
-def speak(text: str) -> bytes:
-    resp = requests.post(
-        f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}/stream",
-        headers={
-            "xi-api-key": os.environ["ELEVENLABS_API_KEY"],
-            "Content-Type": "application/json",
-            "Accept": "audio/mpeg",
-        },
-        json={"text": text, "model_id": "eleven_turbo_v2_5"},
-        timeout=30,
+async def run() -> None:
+    print("=== Pipeline A: ElevenLabs Agent (Claude as native LLM) ===")
+    log = SessionLog(
+        pipeline="elevenlabs_claude", meta={"model": os.environ.get("MODERATOR_MODEL", "claude-sonnet-5")}
     )
-    resp.raise_for_status()
-    return resp.content
+    clock = Clock()
+    stop_event = asyncio.Event()
+    closing_pending = False
 
-
-def play_mp3_bytes(mp3_bytes: bytes) -> None:
-    # Requires ffmpeg-backed decoding; simplest dependency-light path is to
-    # shell out to `ffplay` (part of ffmpeg) which most dev machines already have.
-    import subprocess
-    import tempfile
-
-    with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as f:
-        f.write(mp3_bytes)
-        path = f.name
-    subprocess.run(
-        ["ffplay", "-autoexit", "-nodisp", "-loglevel", "quiet", path],
-        check=True,
+    print("Creating/connecting to your ElevenLabs moderator agent...")
+    agent_id = get_or_create_agent(
+        cache_key="moderator_v1",
+        name="Voice Qual Moderator",
+        system_prompt=MODERATOR_SYSTEM_PROMPT,
+        first_message=OPENING_SCRIPT,
+        voice_id=os.environ["ELEVENLABS_VOICE_ID"],
+        llm_model=os.environ.get("MODERATOR_MODEL", "claude-sonnet-5"),
+        tts_model_id=os.environ.get("ELEVENLABS_TTS_MODEL_ID", "eleven_flash_v2"),
     )
-    os.unlink(path)
+    agent = AgentSession(agent_id)
+    await agent.connect()
+
+    loop = asyncio.get_event_loop()
+    mic_stream = None
+    out_stream = None
+
+    async def pacing_updates() -> None:
+        while not stop_event.is_set():
+            await asyncio.sleep(PACING_UPDATE_SECONDS)
+            try:
+                await agent.ws.send(json.dumps({"type": "contextual_update", "text": _pacing_note(clock.now())}))
+            except Exception:
+                pass
+
+    async def delayed_close() -> None:
+        await asyncio.sleep(1.0)
+        await agent.close()
+
+    pacing_task = asyncio.create_task(pacing_updates())
+
+    try:
+        async for event in agent.events():
+            etype = event.get("type")
+
+            if etype == "conversation_initiation_metadata":
+                print(f"[connected] input={agent.input_sample_rate}Hz output={agent.output_sample_rate}Hz")
+                print("Speak whenever you're ready — press Ctrl+C to end.\n")
+
+                def mic_callback(indata, _frames, _time_info, _status):
+                    asyncio.run_coroutine_threadsafe(agent.send_audio_chunk(indata.tobytes()), loop)
+
+                mic_stream = sd.InputStream(
+                    samplerate=agent.input_sample_rate,
+                    channels=1,
+                    dtype="int16",
+                    blocksize=int(agent.input_sample_rate * CHUNK_MS / 1000),
+                    callback=mic_callback,
+                )
+                out_stream = sd.OutputStream(samplerate=agent.output_sample_rate, channels=1, dtype="int16")
+                mic_stream.start()
+                out_stream.start()
+
+            elif etype == "audio" and out_stream is not None:
+                raw = base64.b64decode(event["audio_event"]["audio_base_64"])
+                out_stream.write(np.frombuffer(raw, dtype="int16"))
+                if closing_pending and event["audio_event"].get("is_final"):
+                    asyncio.create_task(delayed_close())
+
+            elif etype == "user_transcript":
+                text = event["user_transcription_event"]["user_transcript"]
+                t = clock.now()
+                print(f"PARTICIPANT: {text}")
+                log.add_turn(Turn("participant", text, t, t))
+
+            elif etype == "agent_response":
+                text = event["agent_response_event"]["agent_response"]
+                t = clock.now()
+                print(f"MODERATOR: {text}")
+                log.add_turn(Turn("moderator", text, t, t))
+                if text.strip() == CLOSING_SCRIPT.strip():
+                    closing_pending = True
+
+            elif etype == "interruption":
+                print("[interrupted]")
+
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stop_event.set()
+        pacing_task.cancel()
+        if mic_stream is not None:
+            mic_stream.stop()
+            mic_stream.close()
+        if out_stream is not None:
+            out_stream.stop()
+            out_stream.close()
+        await agent.close()
+        path = log.save()
+        print(f"\nSession saved to {path}")
 
 
 def main() -> None:
-    log = SessionLog(pipeline="elevenlabs_claude")
-    clock = Clock()
-    transcript: list[dict] = []
-
-    print("=== Pipeline A: ElevenLabs + Claude (push-to-talk) ===")
-    print("Press Enter to begin the interview.\n")
-    input()
-
-    opening = next_utterance(transcript)
-    t0 = clock.now()
-    audio = speak(opening)
-    t_audio = clock.now()
-    print(f"MODERATOR: {opening}")
-    play_mp3_bytes(audio)
-    transcript.append({"role": "moderator", "text": opening})
-    log.add_turn(Turn("moderator", opening, t0, clock.now(), latency_ms=(t_audio - t0) * 1000))
-
-    while True:
-        print("\nParticipant, press Enter then speak.")
-        input()
-        t_stop = clock.now()
-        rec = record_until_enter()
-        if rec.size == 0:
-            continue
-        text = transcribe(rec)
-        print(f"PARTICIPANT: {text}")
-        transcript.append({"role": "participant", "text": text})
-        log.add_turn(Turn("participant", text, t_stop, clock.now()))
-
-        if text.strip().lower() in {"stop", "end interview", "quit"}:
-            break
-
-        t_req = clock.now()
-        reply = next_utterance(transcript, elapsed_seconds=t_req)
-        t_reply = clock.now()
-        audio = speak(reply)
-        t_audio = clock.now()
-        print(f"MODERATOR: {reply}")
-        play_mp3_bytes(audio)
-        transcript.append({"role": "moderator", "text": reply})
-        log.add_turn(
-            Turn(
-                "moderator",
-                reply,
-                t_req,
-                t_audio,
-                latency_ms=(t_audio - t_stop) * 1000,  # end-of-speech -> audio played
-            )
-        )
-
-    path = log.save()
-    print(f"\nSession saved to {path}")
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        print("\nStopped.")
 
 
 if __name__ == "__main__":

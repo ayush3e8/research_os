@@ -1,20 +1,25 @@
 """Two-bot simulation: GPT-Live (interviewer, same real pipeline as
-pipelines/gpt_live/run.py) talks to a synthetic respondent (an LLM persona
-+ ElevenLabs TTS) instead of a human on a microphone.
+pipelines/gpt_live/run.py) talks to an ElevenLabs Conversational AI Agent
+(the respondent persona, with Claude as its natively-selected LLM) instead
+of a human on a microphone. Both sides are real voice agents bridged by
+forwarding each one's audio output to the other's audio input in real
+time -- neither side needs our own "has it stopped talking" heuristics,
+since each agent does its own turn-detection on the (resampled) audio it
+actually hears from the other.
 
 Deliberately duplicates pipelines/gpt_live/run.py's session/delegation
 logic rather than sharing it -- the two scripts' audio I/O differs enough
-(real mic/speaker vs. synthetic respondent + saved wav files) that a
-shared abstraction wasn't worth the risk while delegation behavior is
-still being actively tuned. If that settles down, factoring the common
-event-loop pattern into common/ would be a reasonable follow-up.
+that a shared abstraction wasn't worth the risk while this is still being
+actively tuned. If that settles down, factoring the common event-loop
+pattern into common/ would be a reasonable follow-up.
 
 Design choice worth knowing: Claude (the moderator brain) is fed the
-respondent's *ground-truth* generated text, not GPT-Live's ASR
-reconstruction of it -- this isolates "how does GPT-Live behave" from
-"how good is its ASR," which are different questions. GPT-Live's own
-ASR output is still captured in the debug log / raw transcript for
-comparison if you want to check transcription accuracy separately.
+respondent's *ground-truth* text from the agent's own agent_response
+events, not GPT-Live's ASR reconstruction of it -- this isolates "how
+does GPT-Live behave" from "how good is its ASR," which are different
+questions. GPT-Live's own ASR output is still captured in the debug log /
+raw transcript for comparison if you want to check transcription
+accuracy separately.
 
 Usage:
     python -m playground.simulate                 # one run, prints to console
@@ -33,6 +38,7 @@ import numpy as np
 import websockets
 from dotenv import load_dotenv
 
+from common.elevenlabs_agent import AgentSession, get_or_create_agent, resample_pcm16
 from common.gpt_live_protocol import (
     CHUNK_MS,
     CHUNK_SAMPLES,
@@ -46,9 +52,8 @@ from common.gpt_live_protocol import (
 )
 from common.interview_guide import CLOSING_SCRIPT, STUDY_TOPIC
 from common.moderator import next_utterance
-from common.respondent import next_reply
+from common.respondent import SYSTEM_PROMPT as RESPONDENT_SYSTEM_PROMPT
 from common.transcript_log import TRANSCRIPTS_DIR, Clock, SessionLog, Turn
-from common.tts import synthesize_pcm16
 
 load_dotenv()
 
@@ -115,7 +120,6 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
     log = SessionLog(pipeline="gpt_live_simulated", meta={"model": MODEL, "voice": VOICE})
     clock = Clock()
     transcript: list[dict] = []  # fed to Claude, same shape as the human pipeline
-    respondent_view: list[dict] = []  # fed to the respondent LLM
     pending_respondent_utterances: list[str] = []
     buf = TranscriptBuffer()
     moderator_chunks: list[tuple[float, bytes]] = []  # (t_offset, pcm16 bytes)
@@ -135,7 +139,20 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
     delegation_count = 0
     ended_reason = "unknown"
 
-    await emit({"type": "info", "text": "connecting..."})
+    await emit({"type": "info", "text": "creating/connecting ElevenLabs respondent agent..."})
+    agent_id = get_or_create_agent(
+        cache_key="respondent_v1",
+        name="Synthetic Respondent",
+        system_prompt=RESPONDENT_SYSTEM_PROMPT,
+        first_message="",  # waits for the moderator to speak first
+        voice_id=os.environ["ELEVENLABS_RESPONDENT_VOICE_ID"],
+        llm_model=os.environ.get("RESPONDENT_MODEL", "claude-sonnet-5"),
+        tts_model_id=os.environ.get("ELEVENLABS_TTS_MODEL_ID", "eleven_flash_v2"),
+    )
+    agent_session = AgentSession(agent_id)
+    await agent_session.connect()
+
+    await emit({"type": "info", "text": "connecting to GPT-Live..."})
 
     async with websockets.connect(WS_URL, additional_headers=headers) as ws:
         session_start = {
@@ -213,66 +230,49 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
             await ws.send(json.dumps(close_event))
             log_raw_event(debug_log, "send", close_event)
 
-        async def respondent_loop() -> None:
-            respondent_consumed_upto = 0
+        async def agent_bridge_loop() -> None:
+            """Consumes the ElevenLabs agent's events. Its audio gets
+            resampled and forwarded to GPT-Live as "mic" input; its
+            agent_response text is the respondent's ground-truth reply,
+            handed to Claude via pending_respondent_utterances. The agent
+            does its own turn-detection on the (resampled) GPT-Live audio
+            it's receiving -- no quiet-threshold guessing needed here."""
             while not stop_event.is_set():
                 try:
-                    await asyncio.sleep(0.15)
-                    new_moderator_text = buf.moderator_text[respondent_consumed_upto:].strip()
-                    # Use the *transcript* stream going quiet, not the audio
-                    # stream: a real run showed output_audio.delta kept
-                    # flowing continuously (zero gaps over 0.6s in 277
-                    # seconds) long after output_transcript.delta had
-                    # stopped for good after just the opening line. GPT-Live
-                    # apparently keeps the audio channel open well past when
-                    # it's actually said anything new, so audio timing alone
-                    # can never signal "done talking" here.
-                    #
-                    # 0.6s was too eager once the transcript signal actually
-                    # worked: a real run showed the respondent barging in
-                    # during a normal mid-sentence pause, GPT-Live correctly
-                    # treating that as an interruption (per its own
-                    # interruption policy) and cutting itself off -- the
-                    # respondent then reacted to the genuinely truncated
-                    # question as "bad connection," which was a reasonable
-                    # read of what was actually happening to it. Since
-                    # transcript deltas really do stop for good when GPT-Live
-                    # is done (unlike audio), we can afford to be patient.
-                    quiet_long_enough = (clock.now() - state["last_transcript_time"]) > 1.4
-                    if not (new_moderator_text and quiet_long_enough):
-                        continue
+                    async for event in agent_session.events():
+                        etype = event.get("type")
 
-                    respondent_consumed_upto = len(buf.moderator_text)
-                    respondent_view.append({"role": "moderator", "text": new_moderator_text})
-                    try:
-                        reply_text = await asyncio.to_thread(next_reply, respondent_view)
-                    except Exception as e:
-                        await emit({"type": "error", "text": f"respondent brain error: {e!r}"})
-                        continue
-                    respondent_view.append({"role": "participant", "text": reply_text})
-                    pending_respondent_utterances.append(reply_text)
-                    t = clock.now()
-                    log.add_turn(Turn("participant", reply_text, t, t))
-                    await emit({"type": "turn", "role": "participant", "text": reply_text, "t": t})
+                        if etype == "audio":
+                            b64 = event["audio_event"]["audio_base_64"]
+                            raw = base64.b64decode(b64)
+                            resampled = resample_pcm16(
+                                raw, agent_session.output_sample_rate or SAMPLE_RATE, SAMPLE_RATE
+                            )
+                            respondent_chunks.append((clock.now(), resampled))
+                            state["respondent_speaking"] = True
+                            try:
+                                await _stream_audio(ws, resampled)
+                            finally:
+                                state["respondent_speaking"] = False
 
-                    try:
-                        audio = await asyncio.to_thread(synthesize_pcm16, reply_text, SAMPLE_RATE)
-                    except Exception as e:
-                        await emit({"type": "error", "text": f"TTS error: {e!r}"})
-                        continue
-                    respondent_chunks.append((clock.now(), audio))
-                    state["respondent_speaking"] = True
-                    try:
-                        await _stream_audio(ws, audio)
-                    finally:
-                        state["respondent_speaking"] = False
+                        elif etype == "agent_response":
+                            reply_text = event["agent_response_event"]["agent_response"]
+                            pending_respondent_utterances.append(reply_text)
+                            t = clock.now()
+                            log.add_turn(Turn("participant", reply_text, t, t))
+                            await emit({"type": "turn", "role": "participant", "text": reply_text, "t": t})
+
+                        elif etype == "user_transcript":
+                            # What the agent's own ASR heard from GPT-Live's
+                            # audio -- kept for comparison, not fed to Claude.
+                            heard = event["user_transcription_event"]["user_transcript"]
+                            buf.add_input_delta(" " + heard)
+
+                    return  # agent_session.events() ended -> connection closed
                 except asyncio.CancelledError:
                     raise
                 except Exception as e:
-                    # Whatever this is, don't let it kill the loop silently --
-                    # that's exactly what left a prior run stuck with no
-                    # visible error at all.
-                    await emit({"type": "error", "text": f"respondent_loop error: {e!r}"})
+                    await emit({"type": "error", "text": f"agent_bridge_loop error: {e!r}"})
                     await asyncio.sleep(1.0)
 
         async def idle_mic_feed() -> None:
@@ -311,7 +311,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                     log_raw_event(debug_log, "send", close_event)
                     return
 
-        respondent_task = asyncio.create_task(respondent_loop())
+        agent_bridge_task = asyncio.create_task(agent_bridge_loop())
         watchdog_task = asyncio.create_task(watchdog())
         idle_mic_task = asyncio.create_task(idle_mic_feed())
 
@@ -334,7 +334,11 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
 
                 elif etype == "session.output_audio.delta":
                     state["last_audio_time"] = clock.now()
-                    moderator_chunks.append((clock.now(), base64.b64decode(event["delta"])))
+                    raw = base64.b64decode(event["delta"])
+                    moderator_chunks.append((clock.now(), raw))
+                    if agent_session.input_sample_rate is not None:
+                        forwarded = resample_pcm16(raw, SAMPLE_RATE, agent_session.input_sample_rate)
+                        await agent_session.send_audio_chunk(forwarded)
 
                 elif etype == "session.delegation.created":
                     asyncio.create_task(handle_delegation(event["delegation"]["id"], clock.now()))
@@ -350,9 +354,10 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
 
         finally:
             stop_event.set()
-            respondent_task.cancel()
+            agent_bridge_task.cancel()
             watchdog_task.cancel()
             idle_mic_task.cancel()
+            await agent_session.close()
             log.meta["raw_participant_transcript"] = buf.participant_text
             log.meta["raw_moderator_transcript"] = buf.moderator_text
             log.meta["delegation_count"] = delegation_count

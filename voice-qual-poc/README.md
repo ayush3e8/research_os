@@ -3,22 +3,30 @@
 A minimal side-by-side test rig for comparing two voice stacks for an AI
 qualitative-research moderator:
 
-- **Pipeline A** (`pipelines/elevenlabs_claude/`) — your existing-style
-  stack: push-to-talk mic capture → Whisper STT → Claude reasoning →
-  ElevenLabs TTS. Turn-taking is manual since nothing here does duplex/VAD.
+- **Pipeline A** (`pipelines/elevenlabs_claude/`) — a full-duplex
+  ElevenLabs Conversational AI Agent, with Claude selected as its native
+  LLM. ElevenLabs' own hosted runtime handles ASR, turn-taking, calling
+  Claude, and TTS as one loop; we just bridge real mic/speaker audio to it.
 - **Pipeline B** (`pipelines/gpt_live/`) — OpenAI's GPT-Live-1
   (launched in the API 2026-09-10), a full-duplex speech-to-speech model.
   It owns the mic stream, turn detection, ASR and TTS, and **delegates all
   reasoning to Claude** via its "client delegation" mode — so it's not
   GPT-Live's *language* you're evaluating, only its *voice layer*.
 
-Both pipelines call the exact same moderator brain
-(`common/moderator.py` + `common/interview_guide.py`), so any difference in
-session quality is attributable to the voice/turn-taking layer, not the
-reasoning — that's the controlled variable that makes the comparison fair.
-The brain also paces itself against each guide's target length (a silent
-per-turn time-check nudges it to prioritize uncovered topics as time runs
-low, and to wrap to the closing line with ~2 min left).
+Both pipelines use the same moderator prompt content
+(`common/moderator.py` + `common/interview_guide.py`) and select the same
+Claude model — but *how* Claude gets called differs, which matters for
+what you're actually comparing: Pipeline B calls Claude directly ourselves
+(GPT-Live's "client delegation" hands us the task, we call the Anthropic
+API, we relay the reply), so we control exactly what Claude sees each
+turn, including a dynamic per-turn pacing note. Pipeline A's Claude calls
+happen inside ElevenLabs' own hosted runtime — we give it our system
+prompt once at agent-creation time, not per turn, so the same dynamic
+pacing note is instead sent periodically as a `contextual_update` message
+(best-effort, see `pipelines/elevenlabs_claude/run.py`). Keep this
+asymmetry in mind: Pipeline B isolates "GPT-Live's voice layer vs.
+GPT-Live's language" cleanly; Pipeline A is closer to "ElevenLabs' whole
+hosted agent stack" than "just its voice layer with an identical brain."
 
 ## Interview guides
 
@@ -64,15 +72,19 @@ pip install -r requirements.txt
 cp .env.example .env   # fill in ANTHROPIC_API_KEY, OPENAI_API_KEY, ELEVENLABS_API_KEY
 ```
 
-You'll also need `ffplay` (ships with ffmpeg) on your PATH for pipeline A's
-audio playback.
-
 ## Run
 
 ```bash
-python -m pipelines.elevenlabs_claude.run   # press Enter to talk, Enter again to stop
-python -m pipelines.gpt_live.run            # just talk — it's full duplex
+python -m pipelines.elevenlabs_claude.run   # full duplex — just talk
+python -m pipelines.gpt_live.run            # full duplex — just talk
 ```
+
+Both create (and cache, in `.elevenlabs_agents.json`/`common/gpt_live_protocol.py`
+constants respectively) whatever they need on first run. The ElevenLabs
+agent is created once and reused on subsequent runs — check
+https://elevenlabs.io/app/agents if you want to see or edit it directly;
+delete its entry from `.elevenlabs_agents.json` to force recreation (e.g.
+after editing `prompts/moderator_rules.txt`).
 
 Each run writes a transcript with per-turn latency to `transcripts/`. Fill
 in `compare/scorecard.md` after running both back to back with the same
@@ -118,13 +130,38 @@ Key design points from the docs worth knowing before you touch this code:
 - Pricing: GPT-Live-1 is $0.05/min for the voice layer, billed separately
   from whatever backend (Claude, here) does the reasoning.
 
+## On the ElevenLabs Agents integration
+
+Schema details in `common/elevenlabs_agent.py` and `pipelines/elevenlabs_claude/run.py`
+(the WebSocket event names, the `conversation_config` agent-creation
+fields, the `contextual_update` pacing mechanism) are drawn from
+ElevenLabs' docs as of this writing and, like the GPT-Live integration,
+**haven't been verified end to end against a live account** — check
+https://elevenlabs.io/docs/eleven-agents if something doesn't fire as
+expected. A few things worth knowing regardless:
+- Nothing here needs a public endpoint or tunnel: we connect *out* to
+  ElevenLabs like an ordinary client (`wss://api.elevenlabs.io/v1/convai/conversation?agent_id=...`),
+  we don't host anything ElevenLabs calls into.
+- Claude is selected natively via the agent's `prompt.llm` field (e.g.
+  `"claude-sonnet-5"`) — no custom-LLM bridge server needed, unlike the
+  ElevenLabs custom-LLM integration pattern that requires hosting your own
+  WebSocket/HTTP endpoint for them to call.
+- Agents are created once and cached in `.elevenlabs_agents.json`
+  (gitignored) so repeat runs reuse the same agent instead of cluttering
+  your ElevenLabs dashboard with a fresh one each time. Delete an entry to
+  force recreation after editing that agent's prompt.
+
 ## Playground: automated GPT-Live vs. synthetic respondent
 
 Running this with a human on the mic every time is slow and adds its own
 variability (your pacing, energy, phrasing all change run to run). The
-playground replaces the human with a synthetic respondent — an LLM persona
-+ ElevenLabs TTS — so you can run many sessions unattended and watch them
-live.
+playground replaces the human with a synthetic respondent — an ElevenLabs
+Conversational AI Agent (Claude as its native LLM, playing a persona) —
+bridged to GPT-Live in real time, so you can run many sessions unattended
+and watch them live. Both sides are real voice agents doing their own
+turn-detection on the (resampled) audio they hear from each other; neither
+side of this bridge needs our own "has it stopped talking" heuristics —
+that whole class of bug from earlier iterations goes away.
 
 ```bash
 python -m playground.server
@@ -140,16 +177,18 @@ duration, how it ended) once each run finishes.
 
 Design notes:
 - The respondent persona lives in `prompts/respondent_persona.txt` (edit
-  freely, same `string.Template`-free plain text as the other prompts —
-  this one has no placeholders). Currently one fixed persona: a Commercial
-  Analytics lead at a pharma company, matching the kind of respondent in
-  the real biopharma guides.
-- Claude (the moderator brain) is fed the respondent's *ground-truth*
-  generated text, not GPT-Live's ASR reconstruction of it — this isolates
-  "how does GPT-Live behave" from "how good is its ASR," which are
-  different questions worth testing separately. GPT-Live's actual ASR
-  output is still saved (`meta.raw_participant_transcript`) if you want to
-  check transcription accuracy on the side.
+  freely, plain text, no placeholders). Currently one fixed persona: a
+  Commercial Analytics lead at a pharma company, matching the kind of
+  respondent in the real biopharma guides. Edit it and delete the
+  `respondent_v1` entry in `.elevenlabs_agents.json` to have it take effect
+  (the agent is otherwise cached and reused across runs).
+- Claude (the moderator brain, called via GPT-Live's client delegation) is
+  fed the respondent agent's *ground-truth* `agent_response` text, not
+  GPT-Live's ASR reconstruction of it — this isolates "how does GPT-Live
+  behave" from "how good is its ASR," different questions worth testing
+  separately. GPT-Live's actual ASR output is still saved
+  (`meta.raw_participant_transcript`) for comparison, and so is the
+  respondent agent's own ASR of GPT-Live (folded into the same field).
 - Each run saves a transcript json + debug jsonl (same format as the human
   pipeline) under `transcripts/playground/`, plus one merged
   `sim_<timestamp>_conversation.wav` — both sides mixed onto one timeline
@@ -159,10 +198,14 @@ Design notes:
 - CLI-only mode also works without the browser: `python -m playground.simulate --n 5 --minutes 3`.
 - This intentionally duplicates some of `pipelines/gpt_live/run.py`'s
   session/delegation logic rather than sharing it, since the two scripts'
-  audio I/O differs a lot (real mic/speaker vs. synthetic respondent).
-  The wire-protocol pieces with no audio-hardware dependency (constants,
-  `TranscriptBuffer`, event logging) were pulled into
-  `common/gpt_live_protocol.py` so both scripts import those, at least.
+  audio I/O differs a lot. The wire-protocol pieces with no audio-hardware
+  dependency (constants, `TranscriptBuffer`, event logging) were pulled
+  into `common/gpt_live_protocol.py` so both scripts import those, at least.
+- Audio between GPT-Live (24kHz) and the ElevenLabs agent (whatever rate
+  it reports in `conversation_initiation_metadata`, negotiated at connect
+  time) is bridged with a simple linear-interpolation resample
+  (`common/elevenlabs_agent.resample_pcm16`) — good enough for this
+  purpose, not broadcast quality.
 
 ## Next steps once you've run both
 
