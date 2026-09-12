@@ -105,7 +105,12 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
     transcript_path = PLAYGROUND_DIR / f"sim_{int(log.started_at)}.json"
 
     headers = {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}
-    state = {"last_audio_time": clock.now(), "closing": False, "respondent_speaking": False}
+    state = {
+        "last_audio_time": clock.now(),
+        "last_transcript_time": clock.now(),
+        "closing": False,
+        "respondent_speaking": False,
+    }
     stop_event = asyncio.Event()
     delegation_count = 0
     ended_reason = "unknown"
@@ -182,7 +187,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
 
         async def close_after_speaking() -> None:
             await asyncio.sleep(1.0)
-            while clock.now() - state["last_audio_time"] < 1.2:
+            while clock.now() - state["last_transcript_time"] < 1.2:
                 await asyncio.sleep(0.3)
             close_event = {"type": "session.close"}
             await ws.send(json.dumps(close_event))
@@ -194,12 +199,15 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                 try:
                     await asyncio.sleep(0.15)
                     new_moderator_text = buf.moderator_text[respondent_consumed_upto:].strip()
-                    # Kept short and polled fast: a real run showed the server
-                    # dropping the connection ~1-2s after GPT-Live stopped
-                    # speaking, while we'd sent nothing but silence the whole
-                    # call. The respondent needs to get real audio flowing
-                    # well inside that window, not after a leisurely pause.
-                    quiet_long_enough = (clock.now() - state["last_audio_time"]) > 0.6
+                    # Use the *transcript* stream going quiet, not the audio
+                    # stream: a real run showed output_audio.delta kept
+                    # flowing continuously (zero gaps over 0.6s in 277
+                    # seconds) long after output_transcript.delta had
+                    # stopped for good after just the opening line. GPT-Live
+                    # apparently keeps the audio channel open well past when
+                    # it's actually said anything new, so audio timing alone
+                    # can never signal "done talking" here.
+                    quiet_long_enough = (clock.now() - state["last_transcript_time"]) > 0.6
                     if not (new_moderator_text and quiet_long_enough):
                         continue
 
@@ -291,6 +299,7 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
 
                 elif etype == "session.output_transcript.delta":
                     buf.add_output_delta(event.get("delta", ""))
+                    state["last_transcript_time"] = clock.now()
 
                 elif etype == "session.output_audio.delta":
                     state["last_audio_time"] = clock.now()
