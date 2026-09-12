@@ -22,6 +22,9 @@ const SYSTEM_PROMPT = `You are a warm, curious voice interviewer conducting a li
 
 Study topic: ${ACTIVE_GUIDE.studyTopic}
 
+Why this study exists (private context -- never say this out loud, but let it actually shape how hard you push on each question; a real business decision depends on getting real answers here, not just moving through the list):
+${ACTIVE_GUIDE.researchObjective}
+
 Guide (cover these in order, probing when an answer is vague, but don't read this list verbatim):
 ${formatGuideForPrompt(ACTIVE_GUIDE)}
 

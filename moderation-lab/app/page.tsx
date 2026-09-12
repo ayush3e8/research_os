@@ -6,10 +6,13 @@ import { Conversation } from "@elevenlabs/client";
 type ArchitectureInfo = { name: string; kind: "native" | "custom" };
 type Persona = { id: string; name: string; generatedProfile: string; axisValues: Record<string, unknown> };
 type TranscriptLine = { role: string; text: string };
+type GuideInfo = { studyTopic: string; researchObjective: string; targetDurationMinutes: number };
 
 export default function Home() {
   const [architectures, setArchitectures] = useState<ArchitectureInfo[]>([]);
   const [personas, setPersonas] = useState<Persona[]>([]);
+  const [guide, setGuide] = useState<GuideInfo | null>(null);
+  const [showObjective, setShowObjective] = useState(true);
   const [selectedArchitecture, setSelectedArchitecture] = useState<string>("");
   const [selectedPersona, setSelectedPersona] = useState<string>("");
   const [status, setStatus] = useState<string>("idle");
@@ -24,6 +27,9 @@ export default function Home() {
         setArchitectures(d.architectures);
         if (d.architectures[0]) setSelectedArchitecture(d.architectures[0].name);
       });
+    fetch("/api/guide")
+      .then((r) => r.json())
+      .then(setGuide);
     refreshPersonas();
   }, []);
 
@@ -97,6 +103,39 @@ export default function Home() {
       <p style={{ color: "var(--muted)", fontSize: 13, marginTop: 0 }}>
         Pick an architecture, talk to it as the respondent, listen for how it feels.
       </p>
+
+      {guide && (
+        <div
+          style={{
+            background: "color-mix(in srgb, var(--accent) 10%, var(--panel))",
+            border: "1px solid var(--accent)",
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 16,
+            fontSize: 13,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <strong>Read this before you start — the objective the moderator is trying to hit ({guide.targetDurationMinutes} min)</strong>
+            <button
+              onClick={() => setShowObjective((v) => !v)}
+              style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12 }}
+            >
+              {showObjective ? "hide" : "show"}
+            </button>
+          </div>
+          {showObjective && (
+            <>
+              <p style={{ margin: "8px 0 4px", fontWeight: 600 }}>{guide.studyTopic}</p>
+              <p style={{ margin: 0, whiteSpace: "pre-wrap", color: "var(--text)" }}>{guide.researchObjective}</p>
+              <p style={{ margin: "8px 0 0", color: "var(--muted)", fontStyle: "italic" }}>
+                The moderator sees this too (it's not read aloud) — but you know it going in, so you can judge
+                whether it actually got to a real answer, not just whether the conversation felt nice.
+              </p>
+            </>
+          )}
+        </div>
+      )}
 
       <div
         style={{

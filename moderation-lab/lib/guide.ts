@@ -11,9 +11,22 @@
  * same pattern as INTERVIEW_GUIDE in the Python project. Adding a third
  * guide is just adding another export and a case in ACTIVE_GUIDE below.
  *
- * Both are deliberately given real texture (a forced-choice, a
- * rating-then-why, an open question designed to surface an unplanned
- * thread) rather than generic questions -- a thin guide makes every
+ * Each guide carries a `researchObjective`: a real business decision this
+ * study exists to inform, not just a topic to chat about. It does two
+ * jobs -- (1) `lib/architectures/baseline.ts` folds a condensed version
+ * into the moderator's own system prompt, so it can recognize when an
+ * answer hasn't actually resolved the thing the study needs to know (not
+ * just execute a question list), and (2) `app/page.tsx` shows it to the
+ * human tester *before* they start the call, so they're evaluating
+ * against a real target ("did it actually establish whether cost, time,
+ * or decision fatigue is the real barrier?") instead of just vibes ("did
+ * that feel natural?"). A real respondent in the field wouldn't
+ * necessarily be told this much detail up front -- this is a deliberate
+ * meta step for the tester's benefit, not something the moderator recites.
+ *
+ * Questions are given real texture (a forced-choice, a rating-then-why, an
+ * open question designed to surface an unplanned thread, a concept
+ * reaction) rather than generic ones -- a thin guide makes every
  * architecture look shallow regardless of how well it actually reasons,
  * since there's nothing worth probing into. Still a ~10-minute
  * conversation, not an elaborate one.
@@ -34,6 +47,8 @@ export type GuideQuestion = {
 export type Guide = {
   studyTopic: string;
   targetDurationMinutes: number;
+  /** The real business decision this study informs -- see module docstring. */
+  researchObjective: string;
   openingScript: string;
   closingScript: string;
   questions: GuideQuestion[];
@@ -43,6 +58,17 @@ export const BIOPHARMA_GUIDE: Guide = {
   studyTopic:
     "How biopharma market-research teams currently run qualitative interviews, and where AI could help.",
   targetDurationMinutes: 10,
+  researchObjective:
+    "You're being interviewed on behalf of an AI-native market-research startup deciding whether " +
+    "experienced biopharma insights professionals would actually trust and adopt AI-moderated " +
+    "qualitative interviews as part of their real research toolkit -- not just find the idea " +
+    "interesting in the abstract. The team needs real answers to: (1) is the biggest barrier in their " +
+    "current process really speed, cost, or depth of insight -- because that determines whether an " +
+    "AI-moderated approach even addresses their actual pain; (2) how much slack do they feel they " +
+    "genuinely have today, and is there real appetite for something different; (3) what would it " +
+    "concretely take for them to trust an AI moderator with a real study, not a toy pilot. As the " +
+    "evaluator, watch whether the moderator actually pins down clear answers to these, not just " +
+    "whether the conversation feels pleasant.",
   openingScript:
     "Hi, thanks so much for joining today. I'd love to hear about how your team runs market research " +
     "and thinks about AI's role in it — there are no wrong answers here, I'm just trying to understand " +
@@ -79,7 +105,7 @@ export const BIOPHARMA_GUIDE: Guide = {
         "Tell me about a specific time that actually bit you.",
         "What would 'fixed' even look like for that?",
       ],
-      note: "Forced-choice framing on purpose -- a vague 'all three are frustrating' answer isn't a real answer to this question, it's worth pushing past.",
+      note: "This is the core of the research objective -- a vague 'all three are frustrating' answer isn't a real answer, worth pushing past.",
     },
     {
       topic: "process health (rating + why)",
@@ -105,13 +131,16 @@ export const BIOPHARMA_GUIDE: Guide = {
         "a turn or two before moving to the next topic, even though it isn't itself a scripted question.",
     },
     {
-      topic: "AI attitudes",
-      ask: "Where, if anywhere, do you see AI actually being useful in this process today, versus where you're skeptical?",
+      topic: "AI trust (concept reaction)",
+      ask:
+        "Now imagine a service where an AI, not a human, actually moderates a live voice interview with " +
+        "your target respondents -- would you seriously consider using that for a real study, or not?",
       targetMinutes: 1.5,
       probes: [
-        "What would it take for you to actually trust an AI-moderated interview?",
-        "What's a claim you've heard from a vendor that you didn't buy?",
+        "What would it concretely take for you to trust it with something that actually matters?",
+        "What's a claim you've heard from a vendor in this space that you didn't buy?",
       ],
+      note: "This is the direct payoff question -- get a real yes/no-leaning reaction and the concrete condition behind it, not just polite interest.",
     },
   ],
 };
@@ -119,43 +148,62 @@ export const BIOPHARMA_GUIDE: Guide = {
 export const EVERYDAY_GUIDE: Guide = {
   studyTopic: "How people decide what to eat day-to-day — grocery shopping, meal planning, and cooking habits.",
   targetDurationMinutes: 10,
+  researchObjective:
+    "You're being interviewed on behalf of Homeplate, a meal-kit and grocery-delivery subscription " +
+    "company. Homeplate's product team is deciding whether to build a new, lower-cost 'Quick Plan' " +
+    "tier -- AI-assisted weekly meal planning and a ready-to-order grocery list, without the full " +
+    "meal-kit boxes -- aimed specifically at people who currently do NOT use any meal-kit or " +
+    "grocery-delivery service. Before building it, they need real answers to: (1) is this person's " +
+    "current process real deliberate choice, or just habit/inertia -- inertia is much harder to " +
+    "unseat than a genuine unmet need; (2) what's actually the bigger barrier -- cost, time, or just " +
+    "not knowing what to make (decision fatigue) -- because the answer changes whether a cheaper tier " +
+    "alone would even move anyone, versus needing to solve decision fatigue directly; (3) how much " +
+    "real appetite exists for something new versus 'it's not broken, don't fix it'; (4) presented with " +
+    "the actual Quick Plan concept, would *this specific person* actually try it, and if not, why not. " +
+    "As the evaluator, watch whether the moderator actually pins down clear answers to these -- " +
+    "especially #2 and #4 -- not just whether the conversation feels pleasant.",
   openingScript:
-    "Hi, thanks for chatting with me today. I want to understand how you actually handle food and " +
-    "groceries in a normal week — no wrong answers, I'm just curious how it really works for you. " +
+    "Hi, thanks for chatting with me today. I'm doing some research on behalf of a company exploring " +
+    "new tools for weekly meal planning and grocery shopping, and I want to understand how you " +
+    "actually handle that today — no wrong answers, I'm just curious how it really works for you. " +
     "Ready to dive in?",
   closingScript:
-    "This was genuinely interesting, thank you for walking me through all of that. That's everything " +
-    "I wanted to cover — have a great rest of your day.",
+    "This was genuinely useful, thank you for walking me through all of that. That's everything I " +
+    "wanted to cover — have a great rest of your day.",
   questions: [
     {
       topic: "warm-up",
       ask: "Tell me about your week so far from a food standpoint — mostly cooking, ordering in, a mix?",
-      targetMinutes: 1.5,
+      targetMinutes: 1,
       probes: ["What did you actually eat yesterday?", "Is that a pretty typical day for you?"],
       note: "Quick warm-up -- get something concrete and specific on the table early.",
     },
     {
-      topic: "current process",
+      topic: "current process (habit vs. deliberate choice)",
       ask: "Walk me through how you actually decide what to buy or make in a typical week.",
-      targetMinutes: 2,
+      targetMinutes: 1.5,
       probes: [
         "Do you plan ahead or figure it out day to day?",
         "Where does most of the effort or time actually go?",
-        "How much of that is a real decision each time vs. just habit?",
+        "Is that a real decision you're making each week, or mostly just habit at this point?",
       ],
+      note: "Trying to establish habit/inertia vs. genuine unmet need -- that distinction matters a lot for whether a new tool would actually get adopted.",
     },
     {
-      topic: "biggest friction point (forced choice)",
+      topic: "core barrier (forced choice)",
       ask:
         "If you had to pick just one — is the bigger friction point for you the cost, the time it takes, " +
         "or just not knowing what you want? Pick one.",
       targetMinutes: 2,
       probes: [
         "Why that one over the other two?",
-        "Tell me about a specific time that was actually annoying.",
-        "What would 'fixed' look like for you?",
+        "Tell me about a specific time that was actually annoying because of it.",
+        "What would 'fixed' actually look like for you?",
       ],
-      note: "Forced-choice on purpose -- a vague 'a bit of everything' answer isn't a real answer, worth pushing past.",
+      note:
+        "This is the single most important question in the whole guide -- the answer decides whether a " +
+        "cheaper option alone would move this person, or whether the real problem is decision fatigue " +
+        "that price can't fix. A vague 'a bit of everything' answer isn't a real answer, worth pushing past.",
     },
     {
       topic: "satisfaction (rating + why)",
@@ -166,7 +214,7 @@ export const EVERYDAY_GUIDE: Guide = {
         scale: "1 (not at all) to 10 (couldn't be better)",
       },
       probes: ["Why that number and not two points higher?", "What would move it up by even one point?"],
-      note: "Get the number, then immediately probe the 'why' -- the number alone isn't the data point that matters.",
+      note: "Get the number, then immediately probe the 'why' -- gauging real appetite for change vs. complacency.",
     },
     {
       topic: "unplanned thread (open-ended)",
@@ -175,13 +223,24 @@ export const EVERYDAY_GUIDE: Guide = {
       probes: ["What actually happened?", "Did it change how you do things afterward?"],
       note:
         "Deliberately open-ended -- whatever story comes up here is worth actually pulling on for a turn " +
-        "or two before moving on, even though it isn't itself a scripted question.",
+        "or two before moving on. A concrete failure moment here is often the real trigger that would " +
+        "make someone switch to something new, worth more than a hypothetical.",
     },
     {
-      topic: "forward-looking",
-      ask: "If you could wave a magic wand and fix one part of how you handle food and groceries, what would it be?",
-      targetMinutes: 1.5,
-      probes: ["Why that, specifically?", "Have you actually tried anything to fix it already?"],
+      topic: "Quick Plan concept reaction",
+      ask:
+        "Here's an idea: imagine a service that, every week, automatically builds you a meal plan and a " +
+        "ready-to-order grocery list based on what you like — no full meal-kit boxes, just the planning " +
+        "and the list, for a lot less than a meal-kit subscription costs. Would you actually try that, or not?",
+      targetMinutes: 2,
+      probes: [
+        "What specifically would make you say yes, or what's holding you back?",
+        "Would that actually solve the friction point you picked earlier, or not really?",
+      ],
+      note:
+        "This is the direct payoff question the whole study exists to answer -- get a real yes/no-leaning " +
+        "reaction and the concrete reason behind it, and explicitly connect it back to whichever barrier " +
+        "they picked earlier (cost/time/decision fatigue) rather than treating it as a fresh question.",
     },
   ],
 };
