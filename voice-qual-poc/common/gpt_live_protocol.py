@@ -15,6 +15,12 @@ from common.transcript_log import TRANSCRIPTS_DIR
 
 PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
 INSTRUCTIONS_TEMPLATE = Template(Path(PROMPTS_DIR / "gpt_live_instructions.txt").read_text())
+# Used when GPT-Live plays the respondent instead of the moderator (see
+# playground/simulate_swapped.py) -- framed around delegating to a backend
+# for what the participant says, not what a moderator asks.
+RESPONDENT_INSTRUCTIONS_TEMPLATE = Template(
+    Path(PROMPTS_DIR / "gpt_live_instructions_respondent.txt").read_text()
+)
 
 WS_URL = "wss://api.openai.com/v1/live/sessions"
 MODEL = os.environ.get("GPT_LIVE_MODEL", "gpt-live-1")

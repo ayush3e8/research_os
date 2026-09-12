@@ -215,12 +215,14 @@ it happens, color-coded by speaker, with a summary (delegation count,
 duration, how it ended) once each run finishes.
 
 Design notes:
-- The respondent persona lives in `prompts/respondent_persona.txt` (edit
-  freely, plain text, no placeholders). Currently one fixed persona: a
-  Commercial Analytics lead at a pharma company, matching the kind of
-  respondent in the real biopharma guides. Edit it and delete the
-  `respondent_v1` entry in `.elevenlabs_agents.json` to have it take effect
-  (the agent is otherwise cached and reused across runs).
+- The respondent persona is selected via `RESPONDENT_PERSONA` in `.env`
+  (see `common/respondent.py`): `commercial_analytics_lead` (default,
+  `prompts/respondent_persona.txt`, a generic oncology-launch persona) or
+  `rachel_pfizer_director` (`prompts/respondent_persona_rachel.txt`, a
+  detailed Pfizer market-research-director persona). Edit either file
+  freely (plain text, no placeholders) and delete the `respondent_v1`
+  entry in `.elevenlabs_agents.json` to have edits take effect (the agent
+  is otherwise cached and reused across runs).
 - Claude (the moderator brain, called via GPT-Live's client delegation) is
   fed the respondent agent's *ground-truth* `agent_response` text, not
   GPT-Live's ASR reconstruction of it — this isolates "how does GPT-Live
@@ -245,6 +247,44 @@ Design notes:
   time) is bridged with a simple linear-interpolation resample
   (`common/elevenlabs_agent.resample_pcm16`) — good enough for this
   purpose, not broadcast quality.
+
+### Role-swapped: ElevenLabs Agent as moderator, GPT-Live as respondent
+
+`python -m playground.simulate_swapped` flips which side plays which role:
+the ElevenLabs Agent becomes the moderator (the exact same guide-driven
+setup as Pipeline A — it reuses that agent's cache key, `moderator_v1`, so
+if you've already run Pipeline A it's the same agent, not a new one), and
+GPT-Live becomes the respondent, voiced via client delegation to
+`common/respondent_brain.next_response()` — a new, simpler Claude-calling
+function (no guide/pacing logic, just "given the conversation so far,
+respond in character") that's the mirror image of `common/moderator.py`'s
+`next_utterance()`.
+
+Design notes specific to this direction:
+- The moderator agent speaks first via its own `first_message` (like
+  Pipeline A) — GPT-Live has no proactive opening here, it just waits.
+- The closing line comes from the moderator agent's `agent_response` text
+  now, not from GPT-Live's own speech, so closing detection watches that
+  side and waits for its audio `is_final` flag before closing GPT-Live's
+  session.
+- The respondent persona is selectable via `RESPONDENT_PERSONA` in `.env`
+  (see `common/respondent.py`): `commercial_analytics_lead` (default,
+  generic) or `rachel_pfizer_director` (a detailed Pfizer market-research
+  director persona, `prompts/respondent_persona_rachel.txt`). Same
+  selector applies to the non-swapped `playground.simulate` too, since the
+  persona is used for whichever side ends up voicing the respondent.
+- **Agent caching gotcha**: since the moderator agent is shared with
+  Pipeline A via the `moderator_v1` cache key, editing
+  `prompts/moderator_rules.txt` and deleting that cache entry to force
+  recreation affects both `pipelines/elevenlabs_claude/run.py` and this
+  script — there's no separate agent to edit independently.
+- Output files are prefixed `sim_swapped_` instead of `sim_` (same
+  `transcripts/playground/` directory, so both directions' runs don't
+  collide) and `log.meta["model"]` reflects `RESPONDENT_MODEL` (the brain
+  now being tested via GPT-Live) rather than `MODERATOR_MODEL`.
+- Unverified against a live run as of this writing, same caveat as
+  everything else GPT-Live/ElevenLabs-Agents-related in this repo — check
+  the debug jsonl if something doesn't fire as expected.
 
 ## Next steps once you've run both
 
