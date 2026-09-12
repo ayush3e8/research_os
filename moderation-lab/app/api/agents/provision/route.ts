@@ -38,10 +38,19 @@ export async function POST(req: Request) {
       llm: { kind: "native", model: "claude-sonnet-5" },
     });
   } else {
-    const appUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : process.env.APP_URL;
+    // VERCEL_URL changes on every single deployment (including production
+    // redeploys) -- confirmed as the real cause of a live outage: an agent
+    // provisioned against it kept pointing at a now-dead URL after the next
+    // deploy, so ElevenLabs' requests to it never reached this app at all.
+    // VERCEL_PROJECT_PRODUCTION_URL is the stable one, exactly for URLs
+    // that need to survive across deploys (like this one, baked into the
+    // agent config at provision time and never updated again).
+    const appUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : process.env.APP_URL;
     if (!appUrl) {
       return Response.json(
-        { error: "Set APP_URL (or deploy to Vercel, which sets VERCEL_URL automatically) before provisioning a custom-LLM architecture." },
+        { error: "Set APP_URL (or deploy to Vercel, which sets VERCEL_PROJECT_PRODUCTION_URL automatically) before provisioning a custom-LLM architecture." },
         { status: 500 }
       );
     }
