@@ -191,10 +191,13 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
         async def respondent_loop() -> None:
             respondent_consumed_upto = 0
             while not stop_event.is_set():
-                await asyncio.sleep(0.3)
-                new_moderator_text = buf.moderator_text[respondent_consumed_upto:].strip()
-                quiet_long_enough = (clock.now() - state["last_audio_time"]) > 1.5
-                if new_moderator_text and quiet_long_enough:
+                try:
+                    await asyncio.sleep(0.3)
+                    new_moderator_text = buf.moderator_text[respondent_consumed_upto:].strip()
+                    quiet_long_enough = (clock.now() - state["last_audio_time"]) > 1.5
+                    if not (new_moderator_text and quiet_long_enough):
+                        continue
+
                     respondent_consumed_upto = len(buf.moderator_text)
                     respondent_view.append({"role": "moderator", "text": new_moderator_text})
                     try:
@@ -215,6 +218,14 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                         continue
                     respondent_audio.extend(audio)
                     await _stream_audio(ws, audio)
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    # Whatever this is, don't let it kill the loop silently --
+                    # that's exactly what left a prior run stuck with no
+                    # visible error at all.
+                    await emit({"type": "error", "text": f"respondent_loop error: {e!r}"})
+                    await asyncio.sleep(1.0)
 
         async def watchdog() -> None:
             nonlocal ended_reason
