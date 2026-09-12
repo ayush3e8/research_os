@@ -4,3 +4,4 @@ __pycache__/
 .env
 transcripts/*.json
 transcripts/*.jsonl
+transcripts/playground/

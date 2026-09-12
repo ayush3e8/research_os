@@ -118,6 +118,50 @@ Key design points from the docs worth knowing before you touch this code:
 - Pricing: GPT-Live-1 is $0.05/min for the voice layer, billed separately
   from whatever backend (Claude, here) does the reasoning.
 
+## Playground: automated GPT-Live vs. synthetic respondent
+
+Running this with a human on the mic every time is slow and adds its own
+variability (your pacing, energy, phrasing all change run to run). The
+playground replaces the human with a synthetic respondent — an LLM persona
++ ElevenLabs TTS — so you can run many sessions unattended and watch them
+live.
+
+```bash
+python -m playground.server
+```
+
+Then open `playground/static/index.html` directly in a browser (double-click
+it, or open its `file://` path) — it connects to `ws://localhost:8765`.
+Everything runs locally; no API keys ever reach the browser, only the local
+page talks to the local server. From there: set a time cap (minutes), then
+"Run 1 simulation" or "Run batch of N" — the live transcript streams in as
+it happens, color-coded by speaker, with a summary (delegation count,
+duration, how it ended) once each run finishes.
+
+Design notes:
+- The respondent persona lives in `prompts/respondent_persona.txt` (edit
+  freely, same `string.Template`-free plain text as the other prompts —
+  this one has no placeholders). Currently one fixed persona: a Commercial
+  Analytics lead at a pharma company, matching the kind of respondent in
+  the real biopharma guides.
+- Claude (the moderator brain) is fed the respondent's *ground-truth*
+  generated text, not GPT-Live's ASR reconstruction of it — this isolates
+  "how does GPT-Live behave" from "how good is its ASR," which are
+  different questions worth testing separately. GPT-Live's actual ASR
+  output is still saved (`meta.raw_participant_transcript`) if you want to
+  check transcription accuracy on the side.
+- Each run saves a transcript json + debug jsonl (same format as the human
+  pipeline) under `transcripts/playground/`, plus two `.wav` files (GPT-Live's
+  actual voice output, and the synthetic respondent's) so you can listen to
+  a run afterward instead of only reading it.
+- CLI-only mode also works without the browser: `python -m playground.simulate --n 5 --minutes 3`.
+- This intentionally duplicates some of `pipelines/gpt_live/run.py`'s
+  session/delegation logic rather than sharing it, since the two scripts'
+  audio I/O differs a lot (real mic/speaker vs. synthetic respondent).
+  The wire-protocol pieces with no audio-hardware dependency (constants,
+  `TranscriptBuffer`, event logging) were pulled into
+  `common/gpt_live_protocol.py` so both scripts import those, at least.
+
 ## Next steps once you've run both
 
 - If GPT-Live-1 wins on latency/naturalness as expected, decide whether to

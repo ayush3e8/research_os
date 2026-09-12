@@ -1,0 +1,186 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GPT-Live vs. Synthetic Respondent — Playground</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f7f7f8;
+    --panel: #ffffff;
+    --border: #e0e0e3;
+    --text: #1a1a1e;
+    --muted: #6b6b74;
+    --moderator: #2563eb;
+    --participant: #16803d;
+    --error: #dc2626;
+    --info: #9333ea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16161a;
+      --panel: #1e1e24;
+      --border: #2f2f37;
+      --text: #eaeaec;
+      --muted: #9a9aa5;
+      --moderator: #60a5fa;
+      --participant: #4ade80;
+      --error: #f87171;
+      --info: #c084fc;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: 16px;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .status { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+  .status.connected { color: var(--participant); }
+  .status.disconnected { color: var(--error); }
+  .controls {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; margin-bottom: 16px;
+  }
+  label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  input[type=number] {
+    width: 60px; padding: 4px 6px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  button {
+    padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--moderator); color: white; font-size: 13px; cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: var(--panel); color: var(--text); }
+  #transcript {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; height: 55vh; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  }
+  .turn { max-width: 80%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+  .turn.moderator { align-self: flex-start; background: color-mix(in srgb, var(--moderator) 15%, var(--panel)); border: 1px solid var(--moderator); }
+  .turn.participant { align-self: flex-end; background: color-mix(in srgb, var(--participant) 15%, var(--panel)); border: 1px solid var(--participant); }
+  .turn .role { font-size: 11px; font-weight: 600; opacity: 0.7; display: block; margin-bottom: 2px; }
+  .sysline { font-size: 12px; padding: 4px 0; }
+  .sysline.info { color: var(--info); }
+  .sysline.error { color: var(--error); }
+  #summary {
+    margin-top: 12px; background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px; font-size: 12px; color: var(--muted);
+    white-space: pre-wrap; display: none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>GPT-Live ⇄ Synthetic Respondent</h1>
+  <div id="status" class="status disconnected">connecting to ws://localhost:8765…</div>
+
+  <div class="controls">
+    <label>cap (min) <input id="minutes" type="number" value="5" min="1" max="30"></label>
+    <button id="runOne">Run 1 simulation</button>
+    <label>batch of <input id="batchN" type="number" value="5" min="1" max="50"></label>
+    <button id="runBatch" class="secondary">Run batch</button>
+  </div>
+
+  <div id="transcript"></div>
+  <div id="summary"></div>
+</div>
+
+<script>
+const statusEl = document.getElementById('status');
+const transcriptEl = document.getElementById('transcript');
+const summaryEl = document.getElementById('summary');
+const runOneBtn = document.getElementById('runOne');
+const runBatchBtn = document.getElementById('runBatch');
+
+let ws;
+
+function connect() {
+  ws = new WebSocket('ws://localhost:8765');
+  ws.onopen = () => {
+    statusEl.textContent = 'connected';
+    statusEl.className = 'status connected';
+  };
+  ws.onclose = () => {
+    statusEl.textContent = 'disconnected — is `python -m playground.server` running? retrying…';
+    statusEl.className = 'status disconnected';
+    setTimeout(connect, 2000);
+  };
+  ws.onerror = () => ws.close();
+  ws.onmessage = (ev) => handleEvent(JSON.parse(ev.data));
+}
+connect();
+
+function addTurn(role, text) {
+  const div = document.createElement('div');
+  div.className = 'turn ' + role;
+  const label = document.createElement('span');
+  label.className = 'role';
+  label.textContent = role === 'moderator' ? 'GPT-Live (Claude-delegated)' : 'Synthetic respondent';
+  div.appendChild(label);
+  div.appendChild(document.createTextNode(text));
+  transcriptEl.appendChild(div);
+  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+function addSysline(kind, text) {
+  const div = document.createElement('div');
+  div.className = 'sysline ' + kind;
+  div.textContent = text;
+  transcriptEl.appendChild(div);
+  transcriptEl.scrollTop = transcriptEl.scrollHeight;
+}
+
+function setRunning(running) {
+  runOneBtn.disabled = running;
+  runBatchBtn.disabled = running;
+}
+
+function handleEvent(event) {
+  switch (event.type) {
+    case 'run_started':
+      transcriptEl.innerHTML = '';
+      summaryEl.style.display = 'none';
+      setRunning(true);
+      addSysline('info', '— simulation started —');
+      break;
+    case 'batch_progress':
+      addSysline('info', `— batch run ${event.current}/${event.total} —`);
+      break;
+    case 'turn':
+      addTurn(event.role, event.text);
+      break;
+    case 'info':
+      addSysline('info', event.text);
+      break;
+    case 'error':
+      addSysline('error', event.text);
+      setRunning(false);
+      break;
+    case 'session_ended':
+      setRunning(false);
+      summaryEl.style.display = 'block';
+      summaryEl.textContent = JSON.stringify(event.summary, null, 2);
+      break;
+  }
+}
+
+runOneBtn.onclick = () => {
+  ws.send(JSON.stringify({ type: 'run', minutes: parseFloat(document.getElementById('minutes').value) }));
+};
+runBatchBtn.onclick = () => {
+  ws.send(JSON.stringify({
+    type: 'run_batch',
+    n: parseInt(document.getElementById('batchN').value, 10),
+    minutes: parseFloat(document.getElementById('minutes').value),
+  }));
+};
+</script>
+</body>
+</html>
