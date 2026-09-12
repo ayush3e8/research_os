@@ -23,13 +23,11 @@ SAMPLE_RATE = 24000
 CHUNK_MS = 100
 CHUNK_SAMPLES = SAMPLE_RATE * CHUNK_MS // 1000
 
-# Diagnostic toggle for whether the moderator speaks first. Originally
-# implemented as a proactive commentary.append with delegation_id=null --
-# confirmed via a live "missing_required_parameter: delegation_id" error
-# that GPT-Live's API flatly rejects that (there's no reply-without-a-
-# delegation path), so send_opening() now steers GPT-Live to say the line
-# itself via session.instructions.append instead. Set this false to skip
-# the proactive opening and wait for the participant to speak first instead.
+# Diagnostic toggle for whether the moderator speaks first: send_opening()
+# uses a proactive commentary.append with delegation_id=null (there's no
+# active delegation yet to reply to) -- confirmed working against the live
+# API (acked with session.commentary.appended, actually spoken). Set this
+# false to skip it and wait for the participant to speak first instead.
 PROACTIVE_OPENING = os.environ.get("GPT_LIVE_PROACTIVE_OPENING", "true").lower() != "false"
 
 
@@ -89,7 +87,14 @@ async def delegation_stall_watchdog(ws, buf: TranscriptBuffer, clock, state: dic
     session.delegation.created fires). Sends a session.instructions.append
     reminder -- session-wide steering, per OpenAI's delegation docs -- if
     too long has passed since the last delegation while the participant has
-    said something GPT-Live hasn't handed off yet."""
+    said something GPT-Live hasn't handed off yet.
+
+    The delegation_id key below is required even outside of any active
+    delegation -- confirmed via a live "missing_required_parameter:
+    delegation_id" error when the key was omitted entirely. A commentary.append
+    sent elsewhere with delegation_id explicitly set to null works fine
+    (acked, actually spoken), so the API appears to require the key be
+    present, not that its value be non-null -- null is what to send here too."""
     nudged_since_last_delegation = False
     while True:
         await asyncio.sleep(5.0)
@@ -97,6 +102,7 @@ async def delegation_stall_watchdog(ws, buf: TranscriptBuffer, clock, state: dic
         if stalled and buf.pending_participant_text() and not nudged_since_last_delegation:
             nudge = {
                 "type": "session.instructions.append",
+                "delegation_id": None,
                 "content": (
                     "You haven't delegated in a while even though the participant has said "
                     "something. If they've paused at all -- even mid-thought or trailing off -- "

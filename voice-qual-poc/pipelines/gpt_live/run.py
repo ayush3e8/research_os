@@ -125,12 +125,16 @@ async def run() -> None:
 
         state = {"last_audio_time": clock.now(), "closing": False, "last_delegation_time": clock.now()}
 
-        async def speak(content: str, delegation_id: str, t_ref: float) -> None:
-            """Push a line to be spoken in reply to a real
-            session.delegation.created event. GPT-Live's API rejects
-            commentary.append without a live delegation_id (confirmed via
-            "missing_required_parameter: delegation_id" in testing) -- there's
-            no proactive variant of this call, see send_opening() below."""
+        async def speak(content: str, delegation_id: str | None, t_ref: float) -> None:
+            """Push a line to be spoken. delegation_id=None speaks
+            proactively, not in response to a session.delegation.created
+            event -- confirmed working in testing (GPT-Live acks it with
+            session.commentary.appended and actually speaks the line). The
+            'missing_required_parameter: delegation_id' error some sends hit
+            turned out to be about appends that omit the key entirely, not
+            about a null value -- see send_opening() and
+            delegation_stall_watchdog for the ones that needed the key
+            added, not this one."""
             t_reply = clock.now()
             transcript.append({"role": "moderator", "text": content})
 
@@ -152,23 +156,9 @@ async def run() -> None:
                 asyncio.create_task(close_after_speaking())
 
         async def send_opening() -> None:
-            # No delegation exists yet to reply to, so this can't go through
-            # speak()/commentary.append -- instead steer GPT-Live to say the
-            # line itself via session.instructions.append (session-wide
-            # steering). It'll show up in output_transcript.delta like any
-            # of GPT-Live's own improvised speech, and handle_delegation's
-            # existing "own speech" folding picks it up and hands it to
-            # Claude the first time a real delegation fires -- same path
-            # already used for any unsolicited GPT-Live speech, so no
-            # separate bookkeeping needed here.
+            t0 = clock.now()
             opening = await asyncio.to_thread(next_utterance, [])
-            print(f"[instructing opening]: {opening}")
-            instruction_event = {
-                "type": "session.instructions.append",
-                "content": f'Open the interview now by saying exactly this, verbatim, in your own voice: "{opening}"',
-            }
-            await ws.send(json.dumps(instruction_event))
-            log_raw_event(debug_log, "send", instruction_event)
+            await speak(opening, delegation_id=None, t_ref=t0)
 
         async def handle_delegation(delegation_id: str, t_delegated: float) -> None:
             # GPT-Live may have improvised its own speech since the last

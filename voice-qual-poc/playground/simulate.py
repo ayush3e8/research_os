@@ -173,11 +173,15 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
         await ws.send(json.dumps(session_start))
         log_raw_event(debug_log, "send", session_start)
 
-        async def speak(content: str, delegation_id: str, t_ref: float) -> None:
-            """Reply to a real session.delegation.created event. GPT-Live's
-            API rejects commentary.append without a live delegation_id
-            (confirmed via "missing_required_parameter: delegation_id" in
-            testing) -- there's no proactive variant, see send_opening()."""
+        async def speak(content: str, delegation_id: str | None, t_ref: float) -> None:
+            """Push a line to be spoken. delegation_id=None speaks
+            proactively, not in response to a session.delegation.created
+            event -- confirmed working in testing (acked with
+            session.commentary.appended, actually spoken). The
+            'missing_required_parameter: delegation_id' error some sends hit
+            is about appends that omit the key entirely, not a null value --
+            see delegation_stall_watchdog for the one that needed the key
+            added, not this one."""
             t_reply = clock.now()
             transcript.append({"role": "moderator", "text": content})
             append_event = {
@@ -196,21 +200,9 @@ async def run_session(max_minutes: float = DEFAULT_MAX_MINUTES, on_event=None) -
                 asyncio.create_task(close_after_speaking())
 
         async def send_opening() -> None:
-            # No delegation exists yet to reply to, so this can't go through
-            # speak()/commentary.append -- steer GPT-Live to say the line
-            # itself via session.instructions.append instead. It'll show up
-            # in output_transcript.delta like any of GPT-Live's own
-            # improvised speech, and handle_delegation's existing "own
-            # speech" folding hands it to Claude on the first real
-            # delegation -- same path already used for unsolicited speech.
+            t0 = clock.now()
             opening = await asyncio.to_thread(next_utterance, [])
-            await emit({"type": "info", "text": f"instructing opening: {opening}"})
-            instruction_event = {
-                "type": "session.instructions.append",
-                "content": f'Open the interview now by saying exactly this, verbatim, in your own voice: "{opening}"',
-            }
-            await ws.send(json.dumps(instruction_event))
-            log_raw_event(debug_log, "send", instruction_event)
+            await speak(opening, None, t0)
 
         async def handle_delegation(delegation_id: str, t_delegated: float) -> None:
             nonlocal delegation_count
