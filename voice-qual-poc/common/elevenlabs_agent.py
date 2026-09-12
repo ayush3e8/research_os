@@ -50,18 +50,25 @@ def get_or_create_agent(
     from elevenlabs.client import ElevenLabs
 
     client = ElevenLabs(api_key=os.environ["ELEVENLABS_API_KEY"])
-    response = client.conversational_ai.agents.create(
-        name=name,
-        tags=["voice-qual-poc"],
-        conversation_config={
-            "tts": {"voice_id": voice_id, "model_id": tts_model_id},
-            "agent": {
-                "first_message": first_message,
-                "language": "en",
-                "prompt": {"prompt": system_prompt, "llm": llm_model},
+    try:
+        response = client.conversational_ai.agents.create(
+            name=name,
+            tags=["voice-qual-poc"],
+            conversation_config={
+                "tts": {"voice_id": voice_id, "model_id": tts_model_id},
+                "agent": {
+                    "first_message": first_message,
+                    "language": "en",
+                    "prompt": {"prompt": system_prompt, "llm": llm_model},
+                },
             },
-        },
-    )
+        )
+    except Exception as e:
+        # The SDK's bare ApiError repr hides the actually useful part --
+        # surface status_code/body explicitly so failures are diagnosable.
+        status = getattr(e, "status_code", None)
+        body = getattr(e, "body", None)
+        raise RuntimeError(f"ElevenLabs agent creation failed (status={status}): {body!r}") from e
     cache[cache_key] = response.agent_id
     _save_cache(cache)
     return response.agent_id
