@@ -11,18 +11,25 @@
  * same pattern as INTERVIEW_GUIDE in the Python project. Adding a third
  * guide is just adding another export and a case in ACTIVE_GUIDE below.
  *
- * Each guide carries a `researchObjective`: a real business decision this
- * study exists to inform, not just a topic to chat about. It does two
- * jobs -- (1) `lib/architectures/baseline.ts` folds a condensed version
- * into the moderator's own system prompt, so it can recognize when an
- * answer hasn't actually resolved the thing the study needs to know (not
- * just execute a question list), and (2) `app/page.tsx` shows it to the
- * human tester *before* they start the call, so they're evaluating
- * against a real target ("did it actually establish whether cost, time,
- * or decision fatigue is the real barrier?") instead of just vibes ("did
- * that feel natural?"). A real respondent in the field wouldn't
- * necessarily be told this much detail up front -- this is a deliberate
- * meta step for the tester's benefit, not something the moderator recites.
+ * Each guide separates two things real market research keeps separate on
+ * purpose (the sponsor-blind practice: a due-diligence interview says
+ * "I'm gathering input on what it takes to succeed in this space," not
+ * "I'm evaluating whether to acquire a company here"):
+ * - `statedPurpose` -- the honest-but-partial framing a real respondent
+ *   would actually be told. `app/page.tsx` shows this *before* the call,
+ *   and it's what the moderator's own opening leans on -- so the human
+ *   tester goes in the same way a real respondent would: informed, but
+ *   not read into the actual strategic question.
+ * - `researchObjective` -- the real business decision this study exists to
+ *   inform. `lib/architectures/baseline.ts` folds a condensed version into
+ *   the moderator's own system prompt (private context, never spoken), so
+ *   it can recognize when an answer hasn't actually resolved what the
+ *   study needs to know, not just execute a question list. `app/page.tsx`
+ *   only reveals this *after* the call ends, so the tester can retro-
+ *   spectively judge whether the moderator actually got there ("did it
+ *   establish whether cost, time, or decision fatigue is the real
+ *   barrier?") without that knowledge contaminating their own answers
+ *   while playing the respondent.
  *
  * Questions are given real texture (a forced-choice, a rating-then-why, an
  * open question designed to surface an unplanned thread, a concept
@@ -47,7 +54,11 @@ export type GuideQuestion = {
 export type Guide = {
   studyTopic: string;
   targetDurationMinutes: number;
-  /** The real business decision this study informs -- see module docstring. */
+  /** Honest-but-partial framing shown to the tester before the call, and
+   * what the moderator's opening leans on -- see module docstring. */
+  statedPurpose: string;
+  /** The real business decision this study informs -- private until after
+   * the call. See module docstring. */
   researchObjective: string;
   openingScript: string;
   closingScript: string;
@@ -58,6 +69,10 @@ export const BIOPHARMA_GUIDE: Guide = {
   studyTopic:
     "How biopharma market-research teams currently run qualitative interviews, and where AI could help.",
   targetDurationMinutes: 10,
+  statedPurpose:
+    "We're doing research on how market research and insights teams in biopharma companies work today " +
+    "-- including how they think about new tools and approaches, AI included, that might change that " +
+    "over time. There's no wrong answer, we're just trying to understand real day-to-day practice.",
   researchObjective:
     "You're being interviewed on behalf of an AI-native market-research startup deciding whether " +
     "experienced biopharma insights professionals would actually trust and adopt AI-moderated " +
@@ -148,6 +163,10 @@ export const BIOPHARMA_GUIDE: Guide = {
 export const EVERYDAY_GUIDE: Guide = {
   studyTopic: "How people decide what to eat day-to-day — grocery shopping, meal planning, and cooking habits.",
   targetDurationMinutes: 10,
+  statedPurpose:
+    "We're doing some research on how people currently plan meals and shop for groceries -- everyday " +
+    "habits, what works, what's annoying -- for a company that's exploring new tools in this space. " +
+    "No wrong answers, just curious how it really works for you.",
   researchObjective:
     "You're being interviewed on behalf of Homeplate, a meal-kit and grocery-delivery subscription " +
     "company. Homeplate's product team is deciding whether to build a new, lower-cost 'Quick Plan' " +

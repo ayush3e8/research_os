@@ -6,13 +6,18 @@ import { Conversation } from "@elevenlabs/client";
 type ArchitectureInfo = { name: string; kind: "native" | "custom" };
 type Persona = { id: string; name: string; generatedProfile: string; axisValues: Record<string, unknown> };
 type TranscriptLine = { role: string; text: string };
-type GuideInfo = { studyTopic: string; researchObjective: string; targetDurationMinutes: number };
+type GuideInfo = {
+  studyTopic: string;
+  statedPurpose: string;
+  researchObjective: string;
+  targetDurationMinutes: number;
+};
 
 export default function Home() {
   const [architectures, setArchitectures] = useState<ArchitectureInfo[]>([]);
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [guide, setGuide] = useState<GuideInfo | null>(null);
-  const [showObjective, setShowObjective] = useState(true);
+  const [callEnded, setCallEnded] = useState(false);
   const [selectedArchitecture, setSelectedArchitecture] = useState<string>("");
   const [selectedPersona, setSelectedPersona] = useState<string>("");
   const [status, setStatus] = useState<string>("idle");
@@ -61,6 +66,7 @@ export default function Home() {
     if (!selectedArchitecture) return;
     setStatus("provisioning...");
     setTranscript([]);
+    setCallEnded(false);
 
     await fetch("/api/agents/provision", {
       method: "POST",
@@ -83,7 +89,10 @@ export default function Home() {
     const convo = await Conversation.startSession({
       signedUrl,
       onConnect: () => setStatus("connected — talk whenever you're ready"),
-      onDisconnect: () => setStatus("call ended"),
+      onDisconnect: () => {
+        setStatus("call ended");
+        setCallEnded(true);
+      },
       onMessage: (message: { source: string; message: string }) => {
         setTranscript((prev) => [...prev, { role: message.source, text: message.message }]);
       },
@@ -95,6 +104,7 @@ export default function Home() {
   async function endCall() {
     await conversation?.endSession();
     setConversation(null);
+    setCallEnded(true);
   }
 
   return (
@@ -115,25 +125,29 @@ export default function Home() {
             fontSize: 13,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-            <strong>Read this before you start — the objective the moderator is trying to hit ({guide.targetDurationMinutes} min)</strong>
-            <button
-              onClick={() => setShowObjective((v) => !v)}
-              style={{ background: "none", border: "none", color: "var(--accent)", cursor: "pointer", fontSize: 12 }}
-            >
-              {showObjective ? "hide" : "show"}
-            </button>
-          </div>
-          {showObjective && (
-            <>
-              <p style={{ margin: "8px 0 4px", fontWeight: 600 }}>{guide.studyTopic}</p>
-              <p style={{ margin: 0, whiteSpace: "pre-wrap", color: "var(--text)" }}>{guide.researchObjective}</p>
-              <p style={{ margin: "8px 0 0", color: "var(--muted)", fontStyle: "italic" }}>
-                The moderator sees this too (it's not read aloud) — but you know it going in, so you can judge
-                whether it actually got to a real answer, not just whether the conversation felt nice.
-              </p>
-            </>
-          )}
+          <strong>Before you start ({guide.targetDurationMinutes} min) — same as what a real respondent would be told:</strong>
+          <p style={{ margin: "8px 0 0", color: "var(--text)" }}>{guide.statedPurpose}</p>
+        </div>
+      )}
+
+      {guide && callEnded && (
+        <div
+          style={{
+            background: "color-mix(in srgb, var(--ok) 10%, var(--panel))",
+            border: "1px solid var(--ok)",
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 16,
+            fontSize: 13,
+          }}
+        >
+          <strong>Now that the call's over — the real objective (kept from you until now, on purpose):</strong>
+          <p style={{ margin: "8px 0 4px", fontWeight: 600 }}>{guide.studyTopic}</p>
+          <p style={{ margin: 0, whiteSpace: "pre-wrap", color: "var(--text)" }}>{guide.researchObjective}</p>
+          <p style={{ margin: "8px 0 0", color: "var(--muted)", fontStyle: "italic" }}>
+            The moderator had this the whole time (private context, never spoken) — judge whether it actually
+            got a real answer to this, not just whether the conversation felt natural.
+          </p>
         </div>
       )}
 
