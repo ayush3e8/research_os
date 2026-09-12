@@ -36,6 +36,26 @@ questions (asked verbally since there's no tap UI in a voice call), and
 v1's sponsor-blind reveal. Add a new guide by copying one of these files'
 structure and pointing `INTERVIEW_GUIDE` at its module name.
 
+## Prompts
+
+The two "meta" prompts (not guide-specific content) live as plain text
+files in `prompts/`, so you can edit prompt wording without touching
+Python:
+
+- `prompts/moderator_rules.txt` — Claude's system prompt (how to behave as
+  a moderator: pacing, verbatim items, rating questions, etc). Loaded by
+  `common/moderator.py` and filled in with `$study_topic`,
+  `$target_duration_minutes`, `$closing_script`, `$guardrails_block`,
+  `$guide`, `$opening_script` — keep those placeholders if you edit it.
+- `prompts/gpt_live_instructions.txt` — GPT-Live's `instructions` field
+  (persona, backchannel/interruption/silence policies, the delegation
+  policy). Loaded by `pipelines/gpt_live/run.py`, filled in with
+  `$study_topic` only.
+
+Edit either file and re-run — no code changes needed. Both use Python's
+`string.Template` (`$name` substitution), so a literal `$` in your prompt
+text needs to be written as `$$`.
+
 ## Setup
 
 ```bash

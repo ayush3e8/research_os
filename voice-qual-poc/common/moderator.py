@@ -9,6 +9,8 @@ anthropic) -- e.g. to test whether GPT-Live's client delegation behaves
 differently when the backend it's handing off to is also an OpenAI model.
 """
 import os
+from pathlib import Path
+from string import Template
 
 from common.interview_guide import (
     CLOSING_SCRIPT,
@@ -22,6 +24,9 @@ from common.interview_guide import (
 BACKEND = os.environ.get("MODERATOR_BACKEND", "anthropic").lower()
 MODEL_ANTHROPIC = os.environ.get("MODERATOR_MODEL", "claude-sonnet-5")
 MODEL_OPENAI = os.environ.get("MODERATOR_MODEL_OPENAI", "gpt-5.6-terra")
+
+PROMPTS_DIR = Path(__file__).resolve().parent.parent / "prompts"
+RULES_TEMPLATE = Template(Path(PROMPTS_DIR / "moderator_rules.txt").read_text())
 
 
 def _format_guide() -> str:
@@ -47,38 +52,19 @@ def _format_guide() -> str:
 
 
 def _build_system_prompt() -> str:
-    guardrails_block = f"\n\nGUARDRAILS — these override every other rule if they conflict:\n{GUARDRAILS}\n" if GUARDRAILS else ""
-    return f"""You are a qualitative research moderator conducting a live \
-spoken interview. Study topic: {STUDY_TOPIC}. Target length: \
-{TARGET_DURATION_MINUTES} minutes total.
-
-Rules:
-- You are speaking out loud. Every reply must be 1-3 short sentences, plain \
-spoken language, no lists or markdown.
-- Ask one question at a time. Never stack multiple questions in one turn.
-- Follow up on specifics the participant mentions before moving to the next \
-guide question. Prefer "tell me more about that" / "what happened next" over \
-leading or yes/no questions.
-- Do not suggest answers, do not evaluate the product, do not break character.
-- Follow the guide topics in the order listed — the order itself may be a \
-deliberate bias-avoidance design, not just a checklist.
-- Items marked "deliver verbatim" must be spoken exactly as written, with no \
-paraphrasing — their wording may be legally or compliance reviewed.
-- Items with a rating request: ask for the numeric rating out loud as part \
-of the conversation (there is no on-screen scale in a voice call), then a \
-short "why that number" follow-up if the guide calls for one.
-- Pace yourself against the target length using each topic's minute budget \
-as a rough guide, spending less time probing once a topic feels covered so \
-earlier topics don't crowd out later ones. You'll get a time check before \
-each reply — use it to speed up, slow down, or wrap early.
-- When the guide is fully covered, or you're told time is nearly up, \
-deliver this closing line verbatim: "{CLOSING_SCRIPT}"
-{guardrails_block}
-Interview guide (topics to cover, in order):
-{_format_guide()}
-
-Opening line to use as your very first turn, verbatim: "{OPENING_SCRIPT}"
-"""
+    guardrails_block = (
+        f"\n\nGUARDRAILS — these override every other rule if they conflict:\n{GUARDRAILS}\n"
+        if GUARDRAILS
+        else ""
+    )
+    return RULES_TEMPLATE.substitute(
+        study_topic=STUDY_TOPIC,
+        target_duration_minutes=TARGET_DURATION_MINUTES,
+        closing_script=CLOSING_SCRIPT,
+        guardrails_block=guardrails_block,
+        guide=_format_guide(),
+        opening_script=OPENING_SCRIPT,
+    )
 
 
 SYSTEM_PROMPT = _build_system_prompt()
