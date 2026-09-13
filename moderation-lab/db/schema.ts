@@ -77,3 +77,16 @@ export const architectureAgents = pgTable("architecture_agents", {
   isCustomLlm: boolean("is_custom_llm").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// One-off table for the LLM-judge reliability experiment
+// (scripts/eval-reliability-experiment.js / app/api/admin/eval-reliability-experiment) --
+// NOT part of the real evaluations schema (that comes after this experiment
+// informs the design). Safe to drop once the experiment's done informing
+// the real framework.
+export const evalReliabilityRuns = pgTable("eval_reliability_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  testName: text("test_name").notNull(),
+  runIndex: integer("run_index").notNull(),
+  result: jsonb("result").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
