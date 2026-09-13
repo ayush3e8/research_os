@@ -7,10 +7,15 @@
  *
  * Runs the SAME underlying task (classify one real probe exchange from
  * the actual food/meal-planning test transcript) at three different
- * context scopes, plus one fully-holistic baseline, N times each at
- * temperature 0, and reports agreement/variance per test. This is a
- * one-off measurement script, not production eval code -- results here
- * inform how the real judge architecture gets built next.
+ * context scopes, plus one fully-holistic baseline, N times each, and
+ * reports agreement/variance per test. Originally called with
+ * temperature: 0 as a variance-reduction lever -- removed after a live
+ * 400 confirmed sampling params (temperature/top_p/top_k) are rejected
+ * entirely on this model family (claude-sonnet-5 and the whole Fable
+ * 5/Opus 5/4.6+ generation), not just deprecated. Whatever variance this
+ * measures is what actually exists at the API's default sampling -- this
+ * is a one-off measurement script, not production eval code; results
+ * here inform how the real judge architecture gets built next.
  */
 const fs = require("fs");
 const path = require("path");
@@ -157,7 +162,6 @@ async function runOnce(test) {
   const response = await anthropic.messages.create({
     model: MODEL,
     max_tokens: 500,
-    temperature: 0,
     system: test.system,
     messages: [{ role: "user", content: test.user }],
     tools: [test.tool],
@@ -181,7 +185,7 @@ function summarizeCategorical(values) {
 }
 
 async function main() {
-  console.log(`Running each of ${TESTS.length} tests ${N_RUNS} times at temperature 0...\n`);
+  console.log(`Running each of ${TESTS.length} tests ${N_RUNS} times...\n`);
 
   for (const test of TESTS) {
     console.log(`\n=== ${test.name} ===`);

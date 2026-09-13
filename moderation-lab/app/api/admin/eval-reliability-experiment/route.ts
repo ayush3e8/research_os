@@ -5,9 +5,17 @@
  * lives, on Vercel, rather than needing the key copied anywhere else).
  *
  * Runs the same judge task (classify a real probe exchange from an actual
- * test transcript) at four different context scopes N times each at
- * temperature 0, to measure real run-to-run drift and whether trimming
- * context to the minimum needed reduces it. Results are written to
+ * test transcript) at four different context scopes, N times each, to
+ * measure real run-to-run drift and whether trimming context to the
+ * minimum needed reduces it. Originally called with temperature: 0 as a
+ * variance-reduction lever -- removed after a live 400 confirmed sampling
+ * params (temperature/top_p/top_k) are rejected entirely on this model
+ * family (claude-sonnet-5 and the whole Fable 5/Opus 5/4.6+ generation),
+ * not just deprecated. That's a real finding, not just a bug: there is no
+ * way to force determinism via sampling on this model at all -- whatever
+ * variance this experiment measures is what actually exists, and atomic
+ * decomposition / self-consistency become the only levers left, not just
+ * nice-to-haves. Results are written to
  * eval_reliability_runs as they complete (so a request timeout doesn't
  * lose partial results) and also returned in the response if it finishes
  * in time.
@@ -176,7 +184,6 @@ async function runOnce(test: Test): Promise<Record<string, unknown> | null> {
   const response = await anthropic().messages.create({
     model: MODEL,
     max_tokens: 500,
-    temperature: 0,
     system: test.system,
     messages: [{ role: "user", content: test.user }],
     tools: [test.tool],
