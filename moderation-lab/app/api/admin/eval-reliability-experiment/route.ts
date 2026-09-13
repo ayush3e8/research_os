@@ -217,6 +217,7 @@ export async function POST(req: Request) {
 
   const summary: Record<string, unknown> = {};
 
+  try {
   for (const test of TESTS) {
     const runIndices = Array.from({ length: N_RUNS }, (_, i) => i);
     const results = await mapWithConcurrency(runIndices, CONCURRENCY, async (runIndex) => {
@@ -236,6 +237,17 @@ export async function POST(req: Request) {
       summary[test.name] = { description: test.description, summary: summarizeCategorical(leadings) };
     }
     (summary[test.name] as Record<string, unknown>).sampleReasonings = results.slice(0, 3).map((r) => r!.reasoning);
+  }
+  } catch (err) {
+    console.error("eval-reliability-experiment failed:", err);
+    return Response.json(
+      {
+        error: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined,
+        partialSummary: summary,
+      },
+      { status: 500 }
+    );
   }
 
   return Response.json(summary);
