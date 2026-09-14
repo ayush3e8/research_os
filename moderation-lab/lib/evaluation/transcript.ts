@@ -12,7 +12,7 @@
  * i (at roughly row[i].createdAt + row[i].latencyMs) -- no need to diff
  * consecutive cumulative arrays.
  */
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { conversationState, turnLogs } from "@/db/schema";
 
@@ -45,10 +45,21 @@ function lastUserText(requestMessages: unknown): string | null {
 export async function loadTranscript(
   conversationFingerprint: string
 ): Promise<{ architecture: string; guideName: string; turns: ReconstructedTurn[] } | null> {
+  // call_type filter is load-bearing, not incidental: strategist/fanout
+  // architectures log their own background-reasoning calls to this same
+  // table (callType "strategist", "fanout-probing", etc.) under the same
+  // conversationFingerprint, interleaved chronologically right after each
+  // real moderator turn. Without this filter, a real evaluation scored
+  // those private, never-spoken background notes as if they were spoken
+  // moderator turns -- and correctly flagged them as leading/robotic, since
+  // internal tactical notes read exactly like that. Confirmed against a
+  // real evaluation (0.51 vs. a 0.65 baseline) whose lowest-scoring "turns"
+  // were, byte for byte, strategist call_health rows the respondent never
+  // heard.
   const rows = await db
     .select()
     .from(turnLogs)
-    .where(eq(turnLogs.conversationFingerprint, conversationFingerprint))
+    .where(and(eq(turnLogs.conversationFingerprint, conversationFingerprint), eq(turnLogs.callType, "moderator")))
     .orderBy(asc(turnLogs.createdAt));
 
   if (rows.length === 0) return null;
