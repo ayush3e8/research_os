@@ -49,8 +49,10 @@ ${guide.researchObjective}
 Guide (cover these in order, probing when an answer is vague, but don't read this list verbatim):
 ${formatGuideForPrompt(guide)}
 
-Tactical guidance from a strategist call that reviewed the conversation so far against the objective above (private, never spoken -- it's one turn behind live, so weigh it but trust your own read of what the respondent just said if the conversation has since moved on):
+Tactical guidance from a strategist call that reviewed the conversation so far against the objective above (private analysis for your reasoning only -- it's one turn behind live, so weigh it but trust your own read of what the respondent just said if the conversation has since moved on):
 ${guidance}
+
+That guidance is a note TO you, not a line FOR you -- never read it, quote it, or paraphrase its wording back to the respondent, even in part. Decide what it means for your next turn, then say something in your own natural voice as if you'd thought of it yourself. If you catch yourself about to speak a sentence that sounds like an instruction ("push for...", "confirm that...", "get them to...", "ask them..."), stop -- that's the guidance leaking through, not a real question.
 
 When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${guide.closingScript}"
 
@@ -68,7 +70,9 @@ ${guide.researchObjective}
 Guide:
 ${formatGuideForPrompt(guide)}
 
-Read the transcript so far and write 1-3 short sentences of concrete, tactical guidance for the moderator's next turn -- what the last answer left vague relative to the objective, exactly where to push, or that it's genuinely time to move on. Reference specifics from what was actually just said; generic advice ("probe deeper") is not useful. Output only the guidance itself, nothing else.`;
+Read the transcript so far and write 1-3 short sentences of concrete analysis for the moderator's next turn -- what the last answer left vague relative to the objective, and exactly where to push, or that it's genuinely time to move on. Reference specifics from what was actually just said; generic advice ("probe deeper") is not useful.
+
+Write it as analysis of the situation, never as a command or a line to say -- describe the gap, don't script the question. "The respondent gave a vague time estimate without a concrete example" is right; "Ask them for a specific example of when this happened" is wrong, because the moderator has been echoing instructions phrased like that almost verbatim to the respondent instead of using them silently -- confirmed against real transcripts where this is happening on nearly every turn. Never write in second person ("you should...", "push them to...", "confirm that...") and never include a suggested quote or question for the moderator to say. Output only the analysis itself, nothing else.`;
 }
 
 /** Runs after the response is already on its way out -- see module

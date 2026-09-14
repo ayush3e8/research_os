@@ -39,8 +39,10 @@ ${guide.researchObjective}
 Guide (cover these in order, probing when an answer is vague, but don't read this list verbatim):
 ${formatGuideForPrompt(guide)}
 
-Tactical guidance synthesized by a panel of specialist advisors that reviewed the conversation so far (private, never spoken -- it's one turn behind live, so weigh it but trust your own read of what the respondent just said if the conversation has since moved on):
+Analysis synthesized by a panel of specialist advisors that reviewed the conversation so far (private, for your reasoning only -- it's one turn behind live, so weigh it but trust your own read of what the respondent just said if the conversation has since moved on):
 ${guidance}
+
+That's a note TO you, not a line FOR you -- never read it, quote it, or paraphrase its wording back to the respondent, even in part. Decide what it means for your next turn, then say something in your own natural voice as if you'd thought of it yourself. If you catch yourself about to speak a sentence that sounds like an instruction ("push for...", "confirm that...", "get them to...", "ask them..."), stop -- that's the guidance leaking through, not a real question.
 
 When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${guide.closingScript}"
 
@@ -80,7 +82,9 @@ You'll be given a computed, deterministic pacing note (elapsed vs. target time -
 
 const SYNTHESIS_SYSTEM_PROMPT = `You are a silent synthesis advisor for a live qualitative interview. You never speak to the respondent.
 
-You'll be given three specialist advisors' notes on the same conversation: one on probing opportunities, one on objective-coverage, one on pacing. Combine them into 1-3 short sentences of concrete tactical guidance for the moderator's *next* turn -- resolve any tension between them (e.g. pacing says move on, probing says push harder) into one clear instruction rather than just listing all three. Output only the guidance itself, nothing else.`;
+You'll be given three specialist advisors' notes on the same conversation: one on probing opportunities, one on objective-coverage, one on pacing. Combine them into 1-3 short sentences of concrete analysis for the moderator's *next* turn -- resolve any tension between them (e.g. pacing says move on, probing says push harder) into one clear read of the situation rather than just listing all three.
+
+Write it as analysis, never as a command or a line to say -- describe the gap or the tension, don't script the question. "The respondent's timeline answer is still vague and pacing allows one more probe" is right; "Ask them for a specific example" is wrong, because the moderator has been echoing instructions phrased like that almost verbatim to the respondent instead of using them silently -- confirmed against real transcripts where this is happening on nearly every turn. Never write in second person ("you should...", "push them to...", "confirm that...") and never include a suggested quote or question for the moderator to say. Output only the analysis itself, nothing else.`;
 
 /** One specialist (or the synthesis) call: runs it, logs it under its own
  * callType so each is comparable in turn_logs, and swallows failures so
