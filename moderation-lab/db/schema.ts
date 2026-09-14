@@ -108,8 +108,16 @@ export const callHealthEvents = pgTable("call_health_events", {
 // null until that match succeeds.
 export const postCallEvents = pgTable("post_call_events", {
   id: uuid("id").primaryKey().defaultRandom(),
-  elevenlabsConversationId: text("elevenlabs_conversation_id").notNull(),
-  agentId: text("agent_id").notNull(),
+  // Signature verification failing (or the payload not parsing) is logged
+  // as its own row with verified=false rather than a bare 401 -- this
+  // session has no Vercel log access, so without this a signature failure
+  // and "ElevenLabs never called at all" are indistinguishable from the DB
+  // alone. elevenlabsConversationId/agentId are nullable for exactly that
+  // case: a rejected or unparseable request may not have gotten far enough
+  // to know either.
+  verified: boolean("verified").notNull(),
+  elevenlabsConversationId: text("elevenlabs_conversation_id"),
+  agentId: text("agent_id"),
   architecture: text("architecture"),
   conversationFingerprint: text("conversation_fingerprint"),
   startTimeUnixSecs: integer("start_time_unix_secs"),

@@ -27,7 +27,7 @@ const CORRELATION_TOLERANCE_SECS = 180;
 
 export async function correlatePostCallEvent(postCallEventId: string): Promise<void> {
   const [event] = await db.select().from(postCallEvents).where(eq(postCallEvents.id, postCallEventId));
-  if (!event || event.conversationFingerprint) return;
+  if (!event || event.conversationFingerprint || !event.agentId) return;
 
   const [agentRow] = await db
     .select()

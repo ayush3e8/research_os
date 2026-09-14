@@ -17,6 +17,16 @@ import { singleChunkSseResponse, toAnthropicMessages, toAnthropicTools } from "@
 import { claimTurn, computeTurnFingerprint, recordTurnResult, waitForTurnResult } from "@/lib/turn-dedup";
 import type { OpenAIMessage, OpenAITool } from "@/lib/openai-translate";
 
+// Architectures that schedule background work via next/server's after()
+// (strategist, fanout) share this same invocation's time budget for that
+// work -- waitUntil()/after() promises get the SAME timeout as the request
+// itself, not an extended one. Without an explicit override this route
+// used Vercel's plan default, which is short enough that a real background
+// reasoning call (a full extra Claude round-trip on top of the moderator's
+// own) could get silently killed before finishing -- no error, no logged
+// row, exactly the failure mode a real strategist test call hit.
+export const maxDuration = 60;
+
 function isAuthorized(req: Request): boolean {
   const expected = process.env.CUSTOM_LLM_WEBHOOK_SECRET;
   if (!expected) return false;
