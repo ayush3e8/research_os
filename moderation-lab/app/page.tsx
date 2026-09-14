@@ -92,6 +92,14 @@ export default function Home() {
       onDisconnect: () => {
         setStatus("call ended");
         setCallEnded(true);
+        // Fire-and-forget: evaluation runs automatically after every call,
+        // no separate step. The UI doesn't wait on it -- check the
+        // /evaluations page once it's done.
+        fetch("/api/evaluations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ architecture: selectedArchitecture }),
+        }).catch(() => {});
       },
       onMessage: (message: { source: string; message: string }) => {
         setTranscript((prev) => [...prev, { role: message.source, text: message.message }]);
@@ -102,6 +110,8 @@ export default function Home() {
   }
 
   async function endCall() {
+    // endSession() triggers onDisconnect below, which is where evaluation
+    // gets triggered -- not duplicated here.
     await conversation?.endSession();
     setConversation(null);
     setCallEnded(true);

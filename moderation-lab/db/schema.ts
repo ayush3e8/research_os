@@ -6,7 +6,7 @@
  * (baseline, strategist, fan-out, whatever comes next) can stash whatever
  * cross-turn data it needs without the schema assuming its shape.
  */
-import { boolean, integer, jsonb, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const turnLogs = pgTable("turn_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -76,6 +76,35 @@ export const architectureAgents = pgTable("architecture_agents", {
   elevenlabsAgentId: text("elevenlabs_agent_id").notNull(),
   isCustomLlm: boolean("is_custom_llm").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Production moderation-quality evaluation for a completed call. Built after
+// three reliability experiments (see the eval-reliability-experiment* routes)
+// found: (1) atomic/boolean judgments are far more reproducible than
+// holistic scores, (2) bundling a *few* booleans for one dimension is safe
+// but bundling many unrelated dimension scores into one call is not, (3)
+// scoring must never be all-or-nothing -- one failed per-turn check should
+// shrink that dimension's sample, not null the whole evaluation. `turnChecks`
+// keeps every individual per-turn LLM call's raw result (flags + quote +
+// reasoning) so a score is always traceable back to its evidence, the same
+// standard the reliability artifact held judge output to.
+export const evaluations = pgTable("evaluations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationFingerprint: text("conversation_fingerprint").notNull(),
+  architecture: text("architecture").notNull(),
+  status: text("status").notNull().default("running"), // "running" | "complete" | "failed"
+  // Per-dimension {score, ...supporting counts} -- see lib/evaluation/aggregate.ts
+  // for the exact deterministic formula behind each one.
+  dimensionScores: jsonb("dimension_scores").notNull().default({}),
+  overallScore: real("overall_score"),
+  // Every individual per-turn check's raw result, kept even when malformed
+  // (malformed: true) so the eval is auditable turn-by-turn, not just as an
+  // aggregate number.
+  turnChecks: jsonb("turn_checks").notNull().default([]),
+  deterministicMetrics: jsonb("deterministic_metrics").notNull().default({}),
+  error: text("error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
 });
 
 // One-off table for the LLM-judge reliability experiment
