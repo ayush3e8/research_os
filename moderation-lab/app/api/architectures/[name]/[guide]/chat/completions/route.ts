@@ -32,6 +32,22 @@ import type { OpenAIMessage, OpenAITool } from "@/lib/openai-translate";
 // reasoning call (a full extra Claude round-trip on top of the moderator's
 // own) could get silently killed before finishing -- no error, no logged
 // row, exactly the failure mode a real strategist test call hit.
+//
+// That maxDuration bump alone did NOT fix it: querying call_health_events
+// after real strategist test calls shows zero background_reasoning_started
+// rows across ~80 real moderator turns -- runStrategistCall's after()
+// callback is not merely failing, it never starts at all. The one concrete
+// difference from the old, reportedly-reliable moderator+strategist repo
+// (archive/old-code-agentic-mr-pharma) this route doesn't share: that
+// repo's equivalent endpoint ran on `export const runtime = "edge"`; this
+// route had no runtime declared, defaulting to Vercel's Node.js serverless
+// runtime, which has different rules for whether work scheduled via
+// after()/waitUntil actually keeps running once the response is sent.
+// Switching to edge to match it -- verified first that every lib this
+// route touches (Anthropic SDK, Neon's serverless driver, turn-dedup's
+// Web Crypto hashing) is fetch/Web-Crypto-based with no Node-only APIs, so
+// nothing else here needs to change for edge compatibility.
+export const runtime = "edge";
 export const maxDuration = 60;
 
 function isAuthorized(req: Request): boolean {
