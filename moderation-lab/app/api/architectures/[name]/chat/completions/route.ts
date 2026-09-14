@@ -10,6 +10,7 @@
  */
 import { getArchitecture } from "@/lib/architectures/registry";
 import { computeConversationFingerprint, getOrInitConversation, updateConversationState } from "@/lib/conversation-state";
+import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
 import { MODEL } from "@/lib/anthropic";
 import { singleChunkSseResponse, toAnthropicMessages, toAnthropicTools } from "@/lib/openai-translate";
@@ -39,11 +40,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
   const tools = toAnthropicTools(body.tools as OpenAITool[] | undefined);
   const id = `chatcmpl-${crypto.randomUUID()}`;
 
+  // Computed up front (pure hashing, no side effects) so a turn-conflict
+  // event below can still be tagged with which conversation it happened in.
+  const conversationFingerprint = await computeConversationFingerprint(system, messages);
+
   // Real-world-motivated dedup: ElevenLabs can send more than one request
   // for what is really a single respondent turn.
   const turnFingerprint = await computeTurnFingerprint(system, messages);
   const wonClaim = await claimTurn(turnFingerprint);
   if (!wonClaim) {
+    await logCallHealthEvent({ eventType: "turn_conflict", conversationFingerprint, architecture: name });
     const winnerResult = await waitForTurnResult(turnFingerprint, 20_000);
     if (winnerResult) {
       return singleChunkSseResponse(id, MODEL, winnerResult.responseText, winnerResult.responseToolCalls);
@@ -52,7 +58,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
     // rather than leaving the respondent's turn unanswered.
   }
 
-  const conversationFingerprint = await computeConversationFingerprint(system, messages);
   const conversation = await getOrInitConversation(conversationFingerprint, name);
 
   try {
@@ -89,7 +94,32 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
   } catch (err) {
     console.error(`architecture "${name}" run() failed:`, err);
     const fallbackText = "Sorry, could you say that again?";
+    const errorMessage = err instanceof Error ? err.message : String(err);
     await recordTurnResult(turnFingerprint, { responseText: fallbackText, responseToolCalls: [], stopReason: "error" });
+    // Previously unlogged entirely -- a fallback turn left no trace in
+    // turn_logs, so the fallback rate wasn't even measurable. Both the full
+    // turn log (for the transcript/latency record) and a call-health event
+    // (for the aggregate rate) are written now.
+    await logTurn({
+      architecture: name,
+      callType: "moderator",
+      conversationFingerprint,
+      model: MODEL,
+      requestSystem: system,
+      requestMessages: messages,
+      requestTools: tools,
+      rawRequestBody: body,
+      responseText: fallbackText,
+      responseToolCalls: [],
+      stopReason: "error",
+      latencyMs: Date.now() - requestStartedAt,
+    });
+    await logCallHealthEvent({
+      eventType: "fallback",
+      conversationFingerprint,
+      architecture: name,
+      detail: { error: errorMessage },
+    });
     return singleChunkSseResponse(id, MODEL, fallbackText, []);
   }
 }

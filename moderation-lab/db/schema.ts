@@ -78,6 +78,50 @@ export const architectureAgents = pgTable("architecture_agents", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+// Call-health signals that can't be derived after the fact from turn_logs
+// alone -- both are genuine gaps found while designing this: a fallback
+// response (architecture.run() threw) was never logged at all before this,
+// and a turn-dedup conflict (ElevenLabs sending >1 request for one
+// respondent turn) only ever left a trace as the *winner's* row in
+// turn_claims, with no record that a conflict happened at all. This table
+// is that missing record, written at the point each event actually occurs
+// in app/api/architectures/[name]/chat/completions/route.ts.
+export const callHealthEvents = pgTable("call_health_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventType: text("event_type").notNull(), // "fallback" | "turn_conflict"
+  conversationFingerprint: text("conversation_fingerprint"),
+  architecture: text("architecture").notNull(),
+  detail: jsonb("detail").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// Raw ElevenLabs post_call_transcription webhook deliveries (see
+// app/api/webhooks/elevenlabs-post-call/route.ts). This is the only source
+// of real ASR + TTS timing -- our own turn_logs.latency_ms only ever
+// measured our webhook's own processing slice, never the silence the
+// respondent actually experienced before/after it. conversationFingerprint
+// is resolved after the fact (ElevenLabs' request to our custom-LLM
+// webhook carries no conversation_id in its body -- confirmed against a
+// real logged request -- so there's no shared key at write time) by
+// matching this event's agent_id to architecture_agents and its
+// start_time_unix_secs to the closest conversation_state.first_seen_at;
+// null until that match succeeds.
+export const postCallEvents = pgTable("post_call_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  elevenlabsConversationId: text("elevenlabs_conversation_id").notNull(),
+  agentId: text("agent_id").notNull(),
+  architecture: text("architecture"),
+  conversationFingerprint: text("conversation_fingerprint"),
+  startTimeUnixSecs: integer("start_time_unix_secs"),
+  callDurationSecs: integer("call_duration_secs"),
+  // The transcript array from the payload (role, message, time_in_call_secs,
+  // conversation_turn_metrics per turn) -- kept separately from the full
+  // raw payload for cheap querying without the audio/analysis blobs.
+  transcript: jsonb("transcript").notNull().default([]),
+  rawPayload: jsonb("raw_payload").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 // Production moderation-quality evaluation for a completed call. Built after
 // three reliability experiments (see the eval-reliability-experiment* routes)
 // found: (1) atomic/boolean judgments are far more reproducible than
