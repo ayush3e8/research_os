@@ -145,7 +145,14 @@ async function runFanoutReasoning(req: ArchitectureRequest, moderatorReply: stri
     architecture: "fanout",
   });
 
-  const transcript: AnthropicMessage[] = [...req.messages, { role: "assistant", content: moderatorReply }];
+  // Trailing user turn is required, not decorative -- see strategist.ts's
+  // runStrategistCall for why (same bug, same fix, confirmed against real
+  // 400s from every one of the first real background-call attempts here too).
+  const transcript: AnthropicMessage[] = [
+    ...req.messages,
+    { role: "assistant", content: moderatorReply },
+    { role: "user", content: "Respond now, per the instructions above." },
+  ];
   const elapsedMinutes = (Date.now() - req.firstSeenAt.getTime()) / 60_000;
 
   // Independent concerns, no reason for one to wait on another.

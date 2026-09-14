@@ -80,7 +80,16 @@ Read the transcript so far and write 1-3 short sentences of concrete, tactical g
  * this at all was otherwise unverifiable. */
 async function runStrategistCall(req: ArchitectureRequest, moderatorReply: string): Promise<void> {
   const startedAt = Date.now();
-  const transcript: AnthropicMessage[] = [...req.messages, { role: "assistant", content: moderatorReply }];
+  // Trailing user turn is required, not decorative -- ending the list on the
+  // appended assistant message (the moderator's own reply) gets a real 400
+  // from Claude ("model does not support assistant message prefill"),
+  // confirmed against every one of the first 23 real background-call
+  // attempts once after() itself started actually firing.
+  const transcript: AnthropicMessage[] = [
+    ...req.messages,
+    { role: "assistant", content: moderatorReply },
+    { role: "user", content: "Respond now, per the instructions above." },
+  ];
   const system = strategistSystemPrompt(req.guide);
 
   await logCallHealthEvent({
