@@ -31,25 +31,41 @@ import { loadTranscript, type ReconstructedTurn } from "./transcript";
 import { aggregateEvaluation } from "./aggregate";
 import type { TurnCheckRecord } from "./types";
 
-const CONCURRENCY = 8;
-const SOFT_BUDGET_MS = 45_000;
+const CONCURRENCY = 16;
+const SOFT_BUDGET_MS = 50_000;
 
+function shuffle<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/** Tasks are built in transcript order, so if the time budget runs out
+ * before they all finish, an unshuffled run would always keep the call's
+ * first half fully checked and drop its second half -- every long call
+ * would be systematically under-evaluated toward its end. Shuffling first
+ * means a truncation (if it happens at all) drops roughly evenly across
+ * turns and check types instead of always the same tail. */
 async function runWithBudget(tasks: (() => Promise<TurnCheckRecord | null>)[]): Promise<{
   records: TurnCheckRecord[];
   truncated: boolean;
 }> {
+  const ordered = shuffle(tasks);
   const deadline = Date.now() + SOFT_BUDGET_MS;
   const records: TurnCheckRecord[] = [];
   let next = 0;
   async function worker() {
-    while (next < tasks.length && Date.now() < deadline) {
+    while (next < ordered.length && Date.now() < deadline) {
       const i = next++;
-      const r = await tasks[i]();
+      const r = await ordered[i]();
       if (r) records.push(r);
     }
   }
   await Promise.all(Array.from({ length: CONCURRENCY }, worker));
-  return { records, truncated: next < tasks.length };
+  return { records, truncated: next < ordered.length };
 }
 
 export async function runEvaluation(conversationFingerprint: string): Promise<string | null> {
