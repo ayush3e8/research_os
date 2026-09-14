@@ -190,8 +190,16 @@ export async function POST(req: Request) {
 
   const summary: Record<string, unknown> = {};
 
+  // A single invocation can time out partway through the utterance list (the
+  // function's ~55s budget doesn't cover all 4 utterances x N_RUNS). Without
+  // this, every retry restarts from utterance 0 and the last utterance never
+  // gets reached. ?start=<index> rotates the list so a retry can target
+  // whichever utterances are still short on samples.
+  const startIdx = Number(new URL(req.url).searchParams.get("start") ?? "0") % UTTERANCES.length;
+  const orderedUtterances = [...UTTERANCES.slice(startIdx), ...UTTERANCES.slice(0, startIdx)];
+
   try {
-    for (const u of UTTERANCES) {
+    for (const u of orderedUtterances) {
       for (let i = 0; i < N_RUNS; i++) {
         const [bundled, ...separateResults] = await Promise.all([
           callBundled(u),
