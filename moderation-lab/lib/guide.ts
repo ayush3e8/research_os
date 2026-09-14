@@ -2,14 +2,21 @@
  * Interview guide content, as plain TypeScript (not a DB table) -- matches
  * the Python project's precedent (common/guides/*.py) and keeps guides
  * versioned with the code rather than requiring a migration to add one.
- * Two guides exist: `everyday` (default) is a simple, personal topic
- * (grocery shopping / meal planning) anyone can be genuinely interviewed on
- * on the spot -- for testing whether the moderator *feels* good without a
- * tester having to act out a persona, which is its own confound.
- * `biopharma` is the real target-domain topic, for testing against actual
- * personas later. Select via the GUIDE env var (GUIDE=biopharma to switch);
- * same pattern as INTERVIEW_GUIDE in the Python project. Adding a third
- * guide is just adding another export and a case in ACTIVE_GUIDE below.
+ *
+ * Several "everyday" guides exist (grocery shopping, commuting, streaming,
+ * fitness) -- simple, personal topics anyone can be genuinely interviewed
+ * on on the spot, for testing whether the moderator *feels* good without a
+ * tester having to act out a persona, which is its own confound. Having
+ * several matters for a real reason found in practice: once a tester has
+ * heard one guide's questions, their answers on a repeat call stop being
+ * spontaneous (they're anticipating what's coming), which contaminates
+ * any comparison between architectures. The guide is picked per call from
+ * the manual-test UI (app/page.tsx) precisely so a fresh one is always
+ * available -- see getGuide() below and how it threads through
+ * ArchitectureRequest.guide rather than being a fixed, deploy-time
+ * constant. `biopharma` is the real target-domain topic, for testing
+ * against actual personas later. Adding another guide is just adding
+ * another export and an entry in the GUIDES registry below.
  *
  * Each guide separates two things real market research keeps separate on
  * purpose (the sponsor-blind practice: a due-diligence interview says
@@ -264,14 +271,322 @@ export const EVERYDAY_GUIDE: Guide = {
   ],
 };
 
-const GUIDES: Record<string, Guide> = {
+export const COMMUTE_GUIDE: Guide = {
+  studyTopic: "How people get to work or school day-to-day, and how they decide on that.",
+  targetDurationMinutes: 10,
+  statedPurpose:
+    "We're doing some research on how people currently get to work or school -- everyday commuting " +
+    "habits, what works, what's annoying -- for a company exploring new options in this space. No " +
+    "wrong answers, just curious how it really works for you.",
+  researchObjective:
+    "You're being interviewed on behalf of RideBundle, a startup considering a single monthly " +
+    "subscription that bundles transit passes, bikeshare, and a handful of on-demand rideshare credits " +
+    "for the days transit or biking doesn't work. Before building it, they need real answers to: (1) is " +
+    "this person's current commute mode real deliberate choice, or just habit/inertia -- inertia is " +
+    "much harder to unseat than a genuine unmet need; (2) what's actually the bigger barrier with their " +
+    "current commute -- cost, time/reliability, or comfort/convenience -- because the answer changes " +
+    "whether a cheaper bundle alone would move anyone, versus needing to solve reliability or comfort " +
+    "directly; (3) how much real appetite exists for something new versus 'it works fine, don't fix " +
+    "it'; (4) presented with the actual bundle concept, would *this specific person* actually switch, " +
+    "and if not, why not. As the evaluator, watch whether the moderator actually pins down clear " +
+    "answers to these -- especially #2 and #4 -- not just whether the conversation feels pleasant.",
+  openingScript:
+    "Hi, thanks for chatting with me today. I'm doing some research on behalf of a company exploring " +
+    "new commuting options, and I want to understand how you actually get around day to day — no " +
+    "wrong answers, I'm just curious how it really works for you. Ready to dive in?",
+  closingScript:
+    "This was genuinely useful, thank you for walking me through all of that. That's everything I " +
+    "wanted to cover — have a great rest of your day.",
+  questions: [
+    {
+      topic: "warm-up",
+      ask: "Tell me about how you got to work or school today, start to finish.",
+      targetMinutes: 1,
+      probes: ["Is that pretty typical, or did something make today different?", "How long does that usually take?"],
+      note: "Quick warm-up -- get something concrete and specific on the table early.",
+    },
+    {
+      topic: "current process (habit vs. deliberate choice)",
+      ask: "Walk me through how you actually ended up commuting this way in the first place.",
+      targetMinutes: 1.5,
+      probes: [
+        "Did you consider other options at the time, or was this just the obvious default?",
+        "Have you re-evaluated it since, or is it mostly set-and-forget at this point?",
+      ],
+      note: "Trying to establish habit/inertia vs. genuine deliberate choice -- that distinction matters a lot for whether a new option would actually get adopted.",
+    },
+    {
+      topic: "core barrier (forced choice)",
+      ask:
+        "If you had to pick just one — is the bigger problem with your commute the cost, the time and " +
+        "reliability, or just the comfort and convenience of it? Pick one.",
+      targetMinutes: 2,
+      probes: [
+        "Why that one over the other two?",
+        "Tell me about a specific commute that was actually bad because of it.",
+        "What would 'fixed' actually look like for you?",
+      ],
+      note:
+        "This is the single most important question in the whole guide -- the answer decides whether a " +
+        "cheaper bundle alone would move this person, or whether the real problem is reliability/comfort " +
+        "that price can't fix. A vague 'it's all a bit annoying' answer isn't a real answer, worth pushing past.",
+    },
+    {
+      topic: "satisfaction (rating + why)",
+      ask: "On a scale of 1 to 10, how satisfied are you with how you currently commute?",
+      targetMinutes: 1.5,
+      rating: {
+        prompt: "How satisfied are you with how you currently commute?",
+        scale: "1 (not at all) to 10 (couldn't be better)",
+      },
+      probes: ["Why that number and not two points higher?", "What would move it up by even one point?"],
+      note: "Get the number, then immediately probe the 'why' -- gauging real appetite for change vs. complacency.",
+    },
+    {
+      topic: "unplanned thread (open-ended)",
+      ask: "Tell me about a specific commute that went really wrong, or really surprised you.",
+      targetMinutes: 1.5,
+      probes: ["What actually happened?", "Did it change how you commute afterward?"],
+      note:
+        "Deliberately open-ended -- whatever story comes up here is worth actually pulling on for a turn " +
+        "or two before moving on. A concrete bad-day story is often the real trigger that would make " +
+        "someone switch to something new, worth more than a hypothetical.",
+    },
+    {
+      topic: "RideBundle concept reaction",
+      ask:
+        "Here's an idea: imagine one monthly subscription that includes your transit pass, a bikeshare " +
+        "membership, and a handful of rideshare credits for the days neither of those works — all for " +
+        "less than what you'd pay for those separately. Would you actually switch to that, or not?",
+      targetMinutes: 2,
+      probes: [
+        "What specifically would make you say yes, or what's holding you back?",
+        "Would that actually solve the friction point you picked earlier, or not really?",
+      ],
+      note:
+        "This is the direct payoff question the whole study exists to answer -- get a real yes/no-leaning " +
+        "reaction and the concrete reason behind it, and explicitly connect it back to whichever barrier " +
+        "they picked earlier (cost/reliability/comfort) rather than treating it as a fresh question.",
+    },
+  ],
+};
+
+export const STREAMING_GUIDE: Guide = {
+  studyTopic: "How people decide what to watch, and how they manage their streaming subscriptions.",
+  targetDurationMinutes: 10,
+  statedPurpose:
+    "We're doing some research on how people currently decide what to watch and manage streaming " +
+    "subscriptions -- everyday habits, what works, what's annoying -- for a company exploring new " +
+    "tools in this space. No wrong answers, just curious how it really works for you.",
+  researchObjective:
+    "You're being interviewed on behalf of Pickr, a startup considering a single cross-platform layer " +
+    "that recommends what to watch across every streaming service you already subscribe to, instead of " +
+    "browsing each app separately. Before building it, they need real answers to: (1) is the bigger " +
+    "problem actually choice paralysis (too much to sort through) or subscription cost/overlap " +
+    "(paying for services barely used) -- because the answer changes whether a recommendation layer " +
+    "alone solves it, versus needing to help people cut subscriptions instead; (2) is their current " +
+    "browsing routine something they've actively chosen, or just habit/inertia; (3) how much real " +
+    "appetite exists for something new versus 'it's fine, I'll just keep scrolling'; (4) presented with " +
+    "the actual concept, would *this specific person* actually use it. As the evaluator, watch whether " +
+    "the moderator actually pins down clear answers to these -- especially #1 and #4 -- not just " +
+    "whether the conversation feels pleasant.",
+  openingScript:
+    "Hi, thanks for chatting with me today. I'm doing some research on behalf of a company exploring " +
+    "new tools for streaming and watching TV, and I want to understand how you actually handle that " +
+    "today — no wrong answers, I'm just curious how it really works for you. Ready to dive in?",
+  closingScript:
+    "This was genuinely useful, thank you for walking me through all of that. That's everything I " +
+    "wanted to cover — have a great rest of your day.",
+  questions: [
+    {
+      topic: "warm-up",
+      ask: "Tell me about the last thing you watched — how did you end up picking that?",
+      targetMinutes: 1,
+      probes: ["How long did it take you to settle on that?", "Is that pretty typical for how you decide?"],
+      note: "Quick warm-up -- get something concrete and specific on the table early.",
+    },
+    {
+      topic: "current process (habit vs. deliberate choice)",
+      ask: "Walk me through how you actually decide what to watch on a typical night.",
+      targetMinutes: 1.5,
+      probes: [
+        "Do you check a specific app first, or scroll around several?",
+        "Is that a real decision each time, or mostly just habit at this point?",
+      ],
+      note: "Trying to establish habit/inertia vs. genuine active decision-making -- that distinction matters a lot for whether a new tool would actually get adopted.",
+    },
+    {
+      topic: "core barrier (forced choice)",
+      ask:
+        "If you had to pick just one — is the bigger problem too many options to sort through, or paying " +
+        "for subscriptions you don't really get your money's worth from? Pick one.",
+      targetMinutes: 2,
+      probes: [
+        "Why that one over the other?",
+        "Tell me about a specific time that was actually annoying because of it.",
+        "What would 'fixed' actually look like for you?",
+      ],
+      note:
+        "This is the single most important question in the whole guide -- the answer decides whether a " +
+        "recommendation layer alone would move this person, or whether the real problem is subscription " +
+        "cost that a better recommender can't fix. A vague 'both, I guess' answer isn't a real answer, " +
+        "worth pushing past.",
+    },
+    {
+      topic: "satisfaction (rating + why)",
+      ask: "On a scale of 1 to 10, how satisfied are you with how you currently find things to watch?",
+      targetMinutes: 1.5,
+      rating: {
+        prompt: "How satisfied are you with how you currently find things to watch?",
+        scale: "1 (not at all) to 10 (couldn't be better)",
+      },
+      probes: ["Why that number and not two points higher?", "What would move it up by even one point?"],
+      note: "Get the number, then immediately probe the 'why' -- gauging real appetite for change vs. complacency.",
+    },
+    {
+      topic: "unplanned thread (open-ended)",
+      ask: "Tell me about a time you spent way longer than you wanted to just deciding what to watch, or gave up entirely.",
+      targetMinutes: 1.5,
+      probes: ["What actually happened?", "Did it change how you do things afterward?"],
+      note:
+        "Deliberately open-ended -- whatever story comes up here is worth actually pulling on for a turn " +
+        "or two before moving on. A concrete frustration moment here is often the real trigger that would " +
+        "make someone try something new, worth more than a hypothetical.",
+    },
+    {
+      topic: "Pickr concept reaction",
+      ask:
+        "Here's an idea: imagine one app that looks across every streaming service you already pay for " +
+        "and just tells you the best thing to watch tonight, so you never have to browse each one " +
+        "separately. Would you actually use that, or not?",
+      targetMinutes: 2,
+      probes: [
+        "What specifically would make you say yes, or what's holding you back?",
+        "Would that actually solve the friction point you picked earlier, or not really?",
+      ],
+      note:
+        "This is the direct payoff question the whole study exists to answer -- get a real yes/no-leaning " +
+        "reaction and the concrete reason behind it, and explicitly connect it back to whichever barrier " +
+        "they picked earlier (choice paralysis/cost) rather than treating it as a fresh question.",
+    },
+  ],
+};
+
+export const FITNESS_GUIDE: Guide = {
+  studyTopic: "How people decide on and actually stick with an exercise routine.",
+  targetDurationMinutes: 10,
+  statedPurpose:
+    "We're doing some research on how people currently approach exercise and fitness -- everyday " +
+    "habits, what works, what's annoying -- for a company exploring new tools in this space. No wrong " +
+    "answers, just curious how it really works for you.",
+  researchObjective:
+    "You're being interviewed on behalf of Coach, a fitness app deciding whether to build AI-adaptive " +
+    "coaching -- a plan that adjusts week to week based on what you actually did, instead of a fixed " +
+    "program. Before building it, they need real answers to: (1) is this person's current routine (or " +
+    "lack of one) real deliberate choice, or just inertia; (2) what's actually the bigger barrier -- not " +
+    "having enough time, not knowing what to actually do (program design), or just not staying " +
+    "motivated -- because the answer changes whether adaptive coaching even addresses the real problem, " +
+    "versus needing something else entirely; (3) how much real appetite exists for something new versus " +
+    "'I've tried enough apps already'; (4) presented with the actual concept, would *this specific " +
+    "person* actually trust and try AI coaching, and if not, why not. As the evaluator, watch whether " +
+    "the moderator actually pins down clear answers to these -- especially #2 and #4 -- not just " +
+    "whether the conversation feels pleasant.",
+  openingScript:
+    "Hi, thanks for chatting with me today. I'm doing some research on behalf of a company exploring " +
+    "new tools for exercise and fitness, and I want to understand how you actually approach that today " +
+    "— no wrong answers, I'm just curious how it really works for you. Ready to dive in?",
+  closingScript:
+    "This was genuinely useful, thank you for walking me through all of that. That's everything I " +
+    "wanted to cover — have a great rest of your day.",
+  questions: [
+    {
+      topic: "warm-up",
+      ask: "Tell me about the last time you exercised — what did you do, and how did you decide to do that?",
+      targetMinutes: 1,
+      probes: ["Is that pretty typical for you?", "How often would you say that happens in a normal week?"],
+      note: "Quick warm-up -- get something concrete and specific on the table early.",
+    },
+    {
+      topic: "current process (habit vs. deliberate choice)",
+      ask: "Walk me through how you actually decide what to do for exercise in a typical week, if anything.",
+      targetMinutes: 1.5,
+      probes: [
+        "Do you follow any kind of plan, or figure it out as you go?",
+        "Is that a real decision you're making, or mostly just habit (or its absence) at this point?",
+      ],
+      note: "Trying to establish habit/inertia vs. genuine active decision-making -- that distinction matters a lot for whether a new tool would actually get adopted.",
+    },
+    {
+      topic: "core barrier (forced choice)",
+      ask:
+        "If you had to pick just one — is the bigger reason you don't exercise more the time it takes, " +
+        "not knowing what to actually do, or just not staying motivated? Pick one.",
+      targetMinutes: 2,
+      probes: [
+        "Why that one over the other two?",
+        "Tell me about a specific time that got in the way because of it.",
+        "What would 'fixed' actually look like for you?",
+      ],
+      note:
+        "This is the single most important question in the whole guide -- the answer decides whether " +
+        "adaptive coaching (which mainly solves 'what to do') would move this person, or whether the " +
+        "real problem is time or motivation that a smarter plan can't fix on its own. A vague 'a bit of " +
+        "everything' answer isn't a real answer, worth pushing past.",
+    },
+    {
+      topic: "satisfaction (rating + why)",
+      ask: "On a scale of 1 to 10, how satisfied are you with how consistently you currently exercise?",
+      targetMinutes: 1.5,
+      rating: {
+        prompt: "How satisfied are you with how consistently you currently exercise?",
+        scale: "1 (not at all) to 10 (couldn't be better)",
+      },
+      probes: ["Why that number and not two points higher?", "What would move it up by even one point?"],
+      note: "Get the number, then immediately probe the 'why' -- gauging real appetite for change vs. complacency.",
+    },
+    {
+      topic: "unplanned thread (open-ended)",
+      ask: "Tell me about a specific time you really meant to exercise and it just didn't happen, or a stretch where you fell off completely.",
+      targetMinutes: 1.5,
+      probes: ["What actually happened?", "Did it change how you approach it afterward?"],
+      note:
+        "Deliberately open-ended -- whatever story comes up here is worth actually pulling on for a turn " +
+        "or two before moving on. A concrete falling-off moment here is often the real trigger that would " +
+        "make someone try something new, worth more than a hypothetical.",
+    },
+    {
+      topic: "Coach concept reaction",
+      ask:
+        "Here's an idea: imagine an app where an AI coach builds you a weekly workout plan and actually " +
+        "adjusts it based on what you really did the week before — not a fixed program you either follow " +
+        "or fall off of. Would you actually trust and try that, or not?",
+      targetMinutes: 2,
+      probes: [
+        "What specifically would make you say yes, or what's holding you back?",
+        "Would that actually solve the barrier you picked earlier, or not really?",
+      ],
+      note:
+        "This is the direct payoff question the whole study exists to answer -- get a real yes/no-leaning " +
+        "reaction and the concrete reason behind it, and explicitly connect it back to whichever barrier " +
+        "they picked earlier (time/program-design/motivation) rather than treating it as a fresh question.",
+    },
+  ],
+};
+
+/** Every guide the app can run, keyed by the name used in the manual-test
+ * UI, the ElevenLabs agent's baked-in webhook URL, and conversation_state's
+ * stored `guide` column. */
+export const GUIDES: Record<string, Guide> = {
   everyday: EVERYDAY_GUIDE,
+  commute: COMMUTE_GUIDE,
+  streaming: STREAMING_GUIDE,
+  fitness: FITNESS_GUIDE,
   biopharma: BIOPHARMA_GUIDE,
 };
 
-/** Which guide the app actually uses -- GUIDE=biopharma to switch, defaults
- * to the simple, personal topic anyone can be genuinely interviewed on. */
-export const ACTIVE_GUIDE: Guide = GUIDES[process.env.GUIDE ?? "everyday"] ?? EVERYDAY_GUIDE;
+export function getGuide(name: string): Guide | undefined {
+  return GUIDES[name];
+}
 
 export function formatGuideForPrompt(guide: Guide): string {
   return guide.questions

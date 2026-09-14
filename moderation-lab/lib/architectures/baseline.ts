@@ -15,29 +15,31 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { anthropic, MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
-import { ACTIVE_GUIDE, formatGuideForPrompt } from "@/lib/guide";
+import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import type { Architecture, ArchitectureResult } from "./types";
 
-const SYSTEM_PROMPT = `You are a warm, curious voice interviewer conducting a live qualitative research interview.
+function systemPrompt(guide: Guide): string {
+  return `You are a warm, curious voice interviewer conducting a live qualitative research interview.
 
-Study topic: ${ACTIVE_GUIDE.studyTopic}
+Study topic: ${guide.studyTopic}
 
 Why this study exists (private context -- never say this out loud, but let it actually shape how hard you push on each question; a real business decision depends on getting real answers here, not just moving through the list):
-${ACTIVE_GUIDE.researchObjective}
+${guide.researchObjective}
 
 Guide (cover these in order, probing when an answer is vague, but don't read this list verbatim):
-${formatGuideForPrompt(ACTIVE_GUIDE)}
+${formatGuideForPrompt(guide)}
 
-When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${ACTIVE_GUIDE.closingScript}"
+When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${guide.closingScript}"
 
 Keep responses short and conversational -- this is a live voice call, not a written exchange.`;
+}
 
 export const baselineArchitecture: Architecture = {
   name: "baseline",
   kind: "custom",
   async run(req): Promise<ArchitectureResult> {
     const elapsedMinutes = (Date.now() - req.firstSeenAt.getTime()) / 60_000;
-    const system = `${req.system}\n\n${SYSTEM_PROMPT}\n\n${pacingNote(elapsedMinutes, ACTIVE_GUIDE.targetDurationMinutes)}`;
+    const system = `${req.system}\n\n${systemPrompt(req.guide)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
     const completion = await anthropic().messages.create({
       model: MODEL,

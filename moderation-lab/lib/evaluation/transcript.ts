@@ -14,7 +14,7 @@
  */
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { turnLogs } from "@/db/schema";
+import { conversationState, turnLogs } from "@/db/schema";
 
 export type ReconstructedTurn = {
   index: number;
@@ -44,7 +44,7 @@ function lastUserText(requestMessages: unknown): string | null {
 
 export async function loadTranscript(
   conversationFingerprint: string
-): Promise<{ architecture: string; turns: ReconstructedTurn[] } | null> {
+): Promise<{ architecture: string; guideName: string; turns: ReconstructedTurn[] } | null> {
   const rows = await db
     .select()
     .from(turnLogs)
@@ -66,5 +66,15 @@ export async function loadTranscript(
     }
   }
 
-  return { architecture: rows[0].architecture, turns };
+  // Which guide this conversation actually ran -- picked per call from the
+  // manual-test UI (see lib/guide.ts's module docstring), so it has to be
+  // looked up per conversation rather than assumed to be a single fixed
+  // guide the whole app runs. Falls back to "everyday" for pre-existing
+  // conversations logged before this column existed.
+  const [stateRow] = await db
+    .select({ guide: conversationState.guide })
+    .from(conversationState)
+    .where(eq(conversationState.fingerprint, conversationFingerprint));
+
+  return { architecture: rows[0].architecture, guideName: stateRow?.guide ?? "everyday", turns };
 }

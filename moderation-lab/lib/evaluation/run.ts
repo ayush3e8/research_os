@@ -16,7 +16,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { evaluations } from "@/db/schema";
-import { ACTIVE_GUIDE } from "@/lib/guide";
+import { getGuide } from "@/lib/guide";
 import {
   checkClarity,
   checkDepthProbe,
@@ -79,7 +79,8 @@ export async function runEvaluation(conversationFingerprint: string): Promise<st
 
   try {
     const { turns } = loaded;
-    const guide = ACTIVE_GUIDE;
+    const guide = getGuide(loaded.guideName);
+    if (!guide) throw new Error(`Unknown guide "${loaded.guideName}" for conversation ${conversationFingerprint}`);
     const tasks: (() => Promise<TurnCheckRecord | null>)[] = [];
 
     // Running "everything the respondent has said so far" for the

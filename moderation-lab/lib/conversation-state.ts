@@ -44,8 +44,16 @@ export type ConversationRow = {
 };
 
 /** Reads existing state, or bootstraps a fresh row (firstSeenAt = now) if
- * this is the first turn seen for this conversation. */
-export async function getOrInitConversation(fingerprint: string, architecture: string): Promise<ConversationRow> {
+ * this is the first turn seen for this conversation. `guide` is only used
+ * on the bootstrap insert -- it's the guide baked into this agent's
+ * webhook URL (see the [guide] route segment), stored once so later
+ * evaluation of this conversation knows which guide it was actually
+ * run against, per lib/guide.ts's module docstring. */
+export async function getOrInitConversation(
+  fingerprint: string,
+  architecture: string,
+  guide: string
+): Promise<ConversationRow> {
   const [existing] = await db
     .select()
     .from(conversationState)
@@ -55,7 +63,7 @@ export async function getOrInitConversation(fingerprint: string, architecture: s
   }
   const [inserted] = await db
     .insert(conversationState)
-    .values({ fingerprint, architecture, state: {} })
+    .values({ fingerprint, architecture, guide, state: {} })
     .onConflictDoNothing()
     .returning();
   if (inserted) {

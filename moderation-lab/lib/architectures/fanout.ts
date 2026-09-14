@@ -19,7 +19,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { after } from "next/server";
 import { anthropic, MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
-import { ACTIVE_GUIDE, formatGuideForPrompt } from "@/lib/guide";
+import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { updateConversationState } from "@/lib/conversation-state";
 import { logTurn } from "@/lib/logging";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
@@ -27,49 +27,55 @@ import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMe
 const DEFAULT_GUIDANCE =
   "No guidance yet -- this is the opening turn, just follow the guide in its natural order.";
 
-function moderatorSystemPrompt(guidance: string): string {
+function moderatorSystemPrompt(guide: Guide, guidance: string): string {
   return `You are a warm, curious voice interviewer conducting a live qualitative research interview.
 
-Study topic: ${ACTIVE_GUIDE.studyTopic}
+Study topic: ${guide.studyTopic}
 
 Why this study exists (private context -- never say this out loud, but let it actually shape how hard you push on each question; a real business decision depends on getting real answers here, not just moving through the list):
-${ACTIVE_GUIDE.researchObjective}
+${guide.researchObjective}
 
 Guide (cover these in order, probing when an answer is vague, but don't read this list verbatim):
-${formatGuideForPrompt(ACTIVE_GUIDE)}
+${formatGuideForPrompt(guide)}
 
 Tactical guidance synthesized by a panel of specialist advisors that reviewed the conversation so far (private, never spoken -- it's one turn behind live, so weigh it but trust your own read of what the respondent just said if the conversation has since moved on):
 ${guidance}
 
-When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${ACTIVE_GUIDE.closingScript}"
+When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${guide.closingScript}"
 
 Keep responses short and conversational -- this is a live voice call, not a written exchange.`;
 }
 
-const PROBING_SYSTEM_PROMPT = `You are a silent probing-opportunities advisor sitting in on a live qualitative interview. You never speak to the respondent.
+function probingSystemPrompt(guide: Guide): string {
+  return `You are a silent probing-opportunities advisor sitting in on a live qualitative interview. You never speak to the respondent.
 
-Study topic: ${ACTIVE_GUIDE.studyTopic}
+Study topic: ${guide.studyTopic}
 
 Look only at the most recent respondent answer(s) in the transcript. Flag anything vague, surprising, evasive, or interesting that's worth the moderator probing harder on next turn, quoting or referencing the specific thing that was said. If the last answer was already concrete and complete, say so plainly rather than inventing something to probe. 1-2 short sentences. Output only that, nothing else.`;
+}
 
-const COVERAGE_SYSTEM_PROMPT = `You are a silent objective-coverage advisor sitting in on a live qualitative interview. You never speak to the respondent.
+function coverageSystemPrompt(guide: Guide): string {
+  return `You are a silent objective-coverage advisor sitting in on a live qualitative interview. You never speak to the respondent.
 
-Study topic: ${ACTIVE_GUIDE.studyTopic}
+Study topic: ${guide.studyTopic}
 
 The real business decision this study exists to inform (private -- the respondent is never told this):
-${ACTIVE_GUIDE.researchObjective}
+${guide.researchObjective}
 
 Guide:
-${formatGuideForPrompt(ACTIVE_GUIDE)}
+${formatGuideForPrompt(guide)}
 
 Judge the transcript so far against the objective above: which of its specific questions have actually been resolved with a real answer versus just touched on or still open. 1-2 short sentences naming what's still genuinely missing, if anything. Output only that, nothing else.`;
+}
 
-const PACING_SYSTEM_PROMPT = `You are a silent pacing advisor sitting in on a live qualitative interview. You never speak to the respondent.
+function pacingSystemPrompt(guide: Guide): string {
+  return `You are a silent pacing advisor sitting in on a live qualitative interview. You never speak to the respondent.
 
 Guide, in order:
-${formatGuideForPrompt(ACTIVE_GUIDE)}
+${formatGuideForPrompt(guide)}
 
 You'll be given a computed, deterministic pacing note (elapsed vs. target time -- trust that arithmetic, don't recompute or second-guess it). Given where the transcript actually is in the guide and how much time is realistically left, say which of the *remaining* guide topics matter most to still hit and which are safe to compress or skip. 1-2 short sentences. Output only that, nothing else.`;
+}
 
 const SYNTHESIS_SYSTEM_PROMPT = `You are a silent synthesis advisor for a live qualitative interview. You never speak to the respondent.
 
@@ -131,19 +137,19 @@ async function runFanoutReasoning(req: ArchitectureRequest, moderatorReply: stri
     runAdvisorCall({
       callType: "fanout-probing",
       conversationFingerprint: req.fingerprint,
-      system: PROBING_SYSTEM_PROMPT,
+      system: probingSystemPrompt(req.guide),
       messages: transcript,
     }),
     runAdvisorCall({
       callType: "fanout-coverage",
       conversationFingerprint: req.fingerprint,
-      system: COVERAGE_SYSTEM_PROMPT,
+      system: coverageSystemPrompt(req.guide),
       messages: transcript,
     }),
     runAdvisorCall({
       callType: "fanout-pacing",
       conversationFingerprint: req.fingerprint,
-      system: `${PACING_SYSTEM_PROMPT}\n\n${pacingNote(elapsedMinutes, ACTIVE_GUIDE.targetDurationMinutes)}`,
+      system: `${pacingSystemPrompt(req.guide)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`,
       messages: transcript,
     }),
   ]);
@@ -182,7 +188,7 @@ export const fanoutArchitecture: Architecture = {
       typeof req.state.fanoutGuidance === "string" && req.state.fanoutGuidance
         ? req.state.fanoutGuidance
         : DEFAULT_GUIDANCE;
-    const system = `${req.system}\n\n${moderatorSystemPrompt(guidance)}\n\n${pacingNote(elapsedMinutes, ACTIVE_GUIDE.targetDurationMinutes)}`;
+    const system = `${req.system}\n\n${moderatorSystemPrompt(req.guide, guidance)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
     const completion = await anthropic().messages.create({
       model: MODEL,

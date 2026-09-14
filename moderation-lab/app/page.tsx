@@ -7,6 +7,7 @@ type ArchitectureInfo = { name: string; kind: "native" | "custom" };
 type Persona = { id: string; name: string; generatedProfile: string; axisValues: Record<string, unknown> };
 type TranscriptLine = { role: string; text: string };
 type GuideInfo = {
+  name: string;
   studyTopic: string;
   statedPurpose: string;
   researchObjective: string;
@@ -16,14 +17,17 @@ type GuideInfo = {
 export default function Home() {
   const [architectures, setArchitectures] = useState<ArchitectureInfo[]>([]);
   const [personas, setPersonas] = useState<Persona[]>([]);
-  const [guide, setGuide] = useState<GuideInfo | null>(null);
+  const [guides, setGuides] = useState<GuideInfo[]>([]);
   const [callEnded, setCallEnded] = useState(false);
   const [selectedArchitecture, setSelectedArchitecture] = useState<string>("");
+  const [selectedGuide, setSelectedGuide] = useState<string>("");
   const [selectedPersona, setSelectedPersona] = useState<string>("");
   const [status, setStatus] = useState<string>("idle");
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [generatingPersona, setGeneratingPersona] = useState(false);
+
+  const guide = guides.find((g) => g.name === selectedGuide) ?? null;
 
   useEffect(() => {
     fetch("/api/architectures")
@@ -32,9 +36,15 @@ export default function Home() {
         setArchitectures(d.architectures);
         if (d.architectures[0]) setSelectedArchitecture(d.architectures[0].name);
       });
+    // Picked per call, not fixed -- once you've heard a guide's questions
+    // once, a repeat call on the same one stops being a fair test (answers
+    // stop being spontaneous), so pick whichever one you haven't used yet.
     fetch("/api/guide")
       .then((r) => r.json())
-      .then(setGuide);
+      .then((d) => {
+        setGuides(d.guides);
+        if (d.guides[0]) setSelectedGuide(d.guides[0].name);
+      });
     refreshPersonas();
   }, []);
 
@@ -63,7 +73,7 @@ export default function Home() {
   }
 
   async function startCall() {
-    if (!selectedArchitecture) return;
+    if (!selectedArchitecture || !selectedGuide) return;
     setStatus("provisioning...");
     setTranscript([]);
     setCallEnded(false);
@@ -71,14 +81,14 @@ export default function Home() {
     await fetch("/api/agents/provision", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ architecture: selectedArchitecture }),
+      body: JSON.stringify({ architecture: selectedArchitecture, guide: selectedGuide }),
     });
 
     setStatus("connecting...");
     const sessionRes = await fetch("/api/agents/session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ architecture: selectedArchitecture }),
+      body: JSON.stringify({ architecture: selectedArchitecture, guide: selectedGuide }),
     });
     const { signedUrl, error } = await sessionRes.json();
     if (error) {
@@ -185,6 +195,17 @@ export default function Home() {
         </label>
 
         <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
+          Guide (pick a fresh one each time — repeats aren't a fair test)
+          <select value={selectedGuide} onChange={(e) => setSelectedGuide(e.target.value)}>
+            {guides.map((g) => (
+              <option key={g.name} value={g.name}>
+                {g.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13 }}>
           Persona (reference only for now — see README)
           <select value={selectedPersona} onChange={(e) => setSelectedPersona(e.target.value)}>
             <option value="">(none)</option>
@@ -201,7 +222,7 @@ export default function Home() {
         </button>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button onClick={startCall} disabled={!!conversation}>
+          <button onClick={startCall} disabled={!!conversation || !selectedGuide}>
             Start call
           </button>
           <button onClick={endCall} disabled={!conversation}>

@@ -29,7 +29,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { after } from "next/server";
 import { anthropic, MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
-import { ACTIVE_GUIDE, formatGuideForPrompt } from "@/lib/guide";
+import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { updateConversationState } from "@/lib/conversation-state";
 import { logTurn } from "@/lib/logging";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
@@ -37,49 +37,52 @@ import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMe
 const DEFAULT_GUIDANCE =
   "No guidance yet -- this is the opening turn, just follow the guide in its natural order.";
 
-function moderatorSystemPrompt(guidance: string): string {
+function moderatorSystemPrompt(guide: Guide, guidance: string): string {
   return `You are a warm, curious voice interviewer conducting a live qualitative research interview.
 
-Study topic: ${ACTIVE_GUIDE.studyTopic}
+Study topic: ${guide.studyTopic}
 
 Why this study exists (private context -- never say this out loud, but let it actually shape how hard you push on each question; a real business decision depends on getting real answers here, not just moving through the list):
-${ACTIVE_GUIDE.researchObjective}
+${guide.researchObjective}
 
 Guide (cover these in order, probing when an answer is vague, but don't read this list verbatim):
-${formatGuideForPrompt(ACTIVE_GUIDE)}
+${formatGuideForPrompt(guide)}
 
 Tactical guidance from a strategist call that reviewed the conversation so far against the objective above (private, never spoken -- it's one turn behind live, so weigh it but trust your own read of what the respondent just said if the conversation has since moved on):
 ${guidance}
 
-When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${ACTIVE_GUIDE.closingScript}"
+When the guide is fully covered or time is up, deliver this closing line and then use the end_call tool: "${guide.closingScript}"
 
 Keep responses short and conversational -- this is a live voice call, not a written exchange.`;
 }
 
-const STRATEGIST_SYSTEM_PROMPT = `You are a silent research-strategy advisor sitting in on a live qualitative interview. You never speak to the respondent -- you only brief the moderator for its *next* turn.
+function strategistSystemPrompt(guide: Guide): string {
+  return `You are a silent research-strategy advisor sitting in on a live qualitative interview. You never speak to the respondent -- you only brief the moderator for its *next* turn.
 
-Study topic: ${ACTIVE_GUIDE.studyTopic}
+Study topic: ${guide.studyTopic}
 
 The real business decision this study exists to inform (private -- the respondent is never told this, but it's what your guidance should actually be optimizing for):
-${ACTIVE_GUIDE.researchObjective}
+${guide.researchObjective}
 
 Guide:
-${formatGuideForPrompt(ACTIVE_GUIDE)}
+${formatGuideForPrompt(guide)}
 
 Read the transcript so far and write 1-3 short sentences of concrete, tactical guidance for the moderator's next turn -- what the last answer left vague relative to the objective, exactly where to push, or that it's genuinely time to move on. Reference specifics from what was actually just said; generic advice ("probe deeper") is not useful. Output only the guidance itself, nothing else.`;
+}
 
 /** Runs after the response is already on its way out -- see module
  * docstring for why this writes state itself instead of returning it. */
 async function runStrategistCall(req: ArchitectureRequest, moderatorReply: string): Promise<void> {
   const startedAt = Date.now();
   const transcript: AnthropicMessage[] = [...req.messages, { role: "assistant", content: moderatorReply }];
+  const system = strategistSystemPrompt(req.guide);
 
   try {
     const completion = await anthropic().messages.create({
       model: MODEL,
       max_tokens: 256,
       thinking: { type: "disabled" },
-      system: STRATEGIST_SYSTEM_PROMPT,
+      system,
       messages: transcript,
     });
     const guidance = completion.content
@@ -93,9 +96,9 @@ async function runStrategistCall(req: ArchitectureRequest, moderatorReply: strin
       callType: "strategist",
       conversationFingerprint: req.fingerprint,
       model: MODEL,
-      requestSystem: STRATEGIST_SYSTEM_PROMPT,
+      requestSystem: system,
       requestMessages: transcript,
-      rawRequestBody: { system: STRATEGIST_SYSTEM_PROMPT, messages: transcript },
+      rawRequestBody: { system, messages: transcript },
       responseText: guidance,
       stopReason: completion.stop_reason,
       latencyMs: Date.now() - startedAt,
@@ -120,7 +123,7 @@ export const strategistArchitecture: Architecture = {
       typeof req.state.strategistGuidance === "string" && req.state.strategistGuidance
         ? req.state.strategistGuidance
         : DEFAULT_GUIDANCE;
-    const system = `${req.system}\n\n${moderatorSystemPrompt(guidance)}\n\n${pacingNote(elapsedMinutes, ACTIVE_GUIDE.targetDurationMinutes)}`;
+    const system = `${req.system}\n\n${moderatorSystemPrompt(req.guide, guidance)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
     const completion = await anthropic().messages.create({
       model: MODEL,

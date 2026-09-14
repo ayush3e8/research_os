@@ -6,7 +6,7 @@
  * (baseline, strategist, fan-out, whatever comes next) can stash whatever
  * cross-turn data it needs without the schema assuming its shape.
  */
-import { boolean, integer, jsonb, pgTable, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, primaryKey, real, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const turnLogs = pgTable("turn_logs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -41,6 +41,14 @@ export const turnClaims = pgTable("turn_claims", {
 export const conversationState = pgTable("conversation_state", {
   fingerprint: text("fingerprint").primaryKey(),
   architecture: text("architecture").notNull(),
+  // Which guide this specific conversation is running -- picked per call
+  // from the manual-test UI (see lib/guide.ts's module docstring for why
+  // guide is a per-call choice, not a fixed deploy-time constant), baked
+  // into the webhook URL at provision time and read off it on the first
+  // turn. Defaulted to "everyday" so historical rows from before this
+  // column existed (when "everyday" was the only guide ever actually
+  // running) stay valid.
+  guide: text("guide").notNull().default("everyday"),
   // Set once, on the first turn seen for this conversation -- lets any
   // architecture compute real elapsed wall-clock time (e.g. for pacing)
   // without ElevenLabs' wire format reliably giving us one.
@@ -69,14 +77,24 @@ export const personas = pgTable("personas", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const architectureAgents = pgTable("architecture_agents", {
-  // e.g. "baseline" -- matches the [name] segment in the API route and the
-  // key in lib/architectures/registry.ts.
-  architecture: text("architecture").primaryKey(),
-  elevenlabsAgentId: text("elevenlabs_agent_id").notNull(),
-  isCustomLlm: boolean("is_custom_llm").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const architectureAgents = pgTable(
+  "architecture_agents",
+  {
+    // e.g. "baseline" -- matches the [name] segment in the API route and
+    // the key in lib/architectures/registry.ts.
+    architecture: text("architecture").notNull(),
+    // Each (architecture, guide) pair gets its own ElevenLabs agent, baked
+    // with that guide's opening line and the guide name in its webhook URL
+    // -- see lib/guide.ts's module docstring for why guide is picked per
+    // call rather than fixed. Defaulted for the same historical reason as
+    // conversation_state.guide.
+    guide: text("guide").notNull().default("everyday"),
+    elevenlabsAgentId: text("elevenlabs_agent_id").notNull(),
+    isCustomLlm: boolean("is_custom_llm").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.architecture, table.guide] })]
+);
 
 // Call-health signals that can't be derived after the fact from turn_logs
 // alone -- both are genuine gaps found while designing this: a fallback

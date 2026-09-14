@@ -1,10 +1,17 @@
-import { ACTIVE_GUIDE } from "@/lib/guide";
+/**
+ * Lists every guide so the manual-test UI can offer a per-call picker --
+ * see lib/guide.ts's module docstring for why guide selection moved from
+ * a fixed deploy-time constant to a per-call choice.
+ */
+import { GUIDES } from "@/lib/guide";
 
 export async function GET() {
-  return Response.json({
-    studyTopic: ACTIVE_GUIDE.studyTopic,
-    statedPurpose: ACTIVE_GUIDE.statedPurpose,
-    researchObjective: ACTIVE_GUIDE.researchObjective,
-    targetDurationMinutes: ACTIVE_GUIDE.targetDurationMinutes,
-  });
+  const guides = Object.entries(GUIDES).map(([name, guide]) => ({
+    name,
+    studyTopic: guide.studyTopic,
+    statedPurpose: guide.statedPurpose,
+    researchObjective: guide.researchObjective,
+    targetDurationMinutes: guide.targetDurationMinutes,
+  }));
+  return Response.json({ guides });
 }

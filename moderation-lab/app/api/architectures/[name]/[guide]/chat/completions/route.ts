@@ -1,17 +1,24 @@
 /**
  * The endpoint ElevenLabs calls once per conversational turn for any
- * custom-LLM architecture. Must live at exactly this path -- ElevenLabs
- * treats the configured custom_llm.url as a base and appends
- * /chat/completions itself.
+ * custom-LLM architecture. Must live at exactly this path (down to
+ * /chat/completions) -- ElevenLabs treats the configured custom_llm.url as
+ * a base and appends /chat/completions itself. The [guide] segment is
+ * baked into that url at provision time (app/api/agents/provision) and
+ * read fresh on every turn here -- see lib/guide.ts's module docstring for
+ * why guide is a per-call choice rather than a fixed deploy-time constant,
+ * and architecture_agents' docstring in db/schema.ts for why each
+ * (architecture, guide) pair gets its own ElevenLabs agent.
  *
- * Everything architecture-agnostic (auth, wire-format translation, turn
- * dedup, cross-turn state bootstrap, logging) lives here. What actually
- * gets said is entirely delegated to the named architecture's `run()`.
+ * Everything else architecture-agnostic (auth, wire-format translation,
+ * turn dedup, cross-turn state bootstrap, logging) lives here. What
+ * actually gets said is entirely delegated to the named architecture's
+ * `run()`.
  */
 import { getArchitecture } from "@/lib/architectures/registry";
 import { computeConversationFingerprint, getOrInitConversation, updateConversationState } from "@/lib/conversation-state";
 import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
+import { getGuide } from "@/lib/guide";
 import { MODEL } from "@/lib/anthropic";
 import { singleChunkSseResponse, toAnthropicMessages, toAnthropicTools } from "@/lib/openai-translate";
 import { claimTurn, computeTurnFingerprint, recordTurnResult, waitForTurnResult } from "@/lib/turn-dedup";
@@ -33,15 +40,19 @@ function isAuthorized(req: Request): boolean {
   return req.headers.get("authorization") === `Bearer ${expected}`;
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ name: string }> }) {
+export async function POST(req: Request, { params }: { params: Promise<{ name: string; guide: string }> }) {
   if (!isAuthorized(req)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
-  const { name } = await params;
+  const { name, guide: guideName } = await params;
   const architecture = getArchitecture(name);
   if (!architecture || architecture.kind !== "custom" || !architecture.run) {
     return new Response(`Unknown or non-custom architecture: ${name}`, { status: 404 });
+  }
+  const guide = getGuide(guideName);
+  if (!guide) {
+    return new Response(`Unknown guide: ${guideName}`, { status: 404 });
   }
 
   const requestStartedAt = Date.now();
@@ -68,7 +79,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
     // rather than leaving the respondent's turn unanswered.
   }
 
-  const conversation = await getOrInitConversation(conversationFingerprint, name);
+  const conversation = await getOrInitConversation(conversationFingerprint, name, guideName);
 
   try {
     const result = await architecture.run({
@@ -78,6 +89,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
       tools,
       firstSeenAt: conversation.firstSeenAt,
       state: conversation.state,
+      guide,
     });
 
     await updateConversationState(conversationFingerprint, result.nextState);

@@ -7,6 +7,7 @@
  * architecture. The webhook route (route.ts) doesn't know or care.
  */
 import type Anthropic from "@anthropic-ai/sdk";
+import type { Guide } from "@/lib/guide";
 
 export type AnthropicMessage = Anthropic.MessageParam;
 
@@ -17,6 +18,10 @@ export type ArchitectureRequest = {
   tools: Anthropic.Tool[];
   firstSeenAt: Date;
   state: Record<string, unknown>;
+  /** Picked per call from the manual-test UI, not a fixed deploy-time
+   * constant -- see lib/guide.ts's module docstring for why (repeat guides
+   * stop being a fair test once a tester has heard the questions once). */
+  guide: Guide;
 };
 
 export type ArchitectureResult = {
