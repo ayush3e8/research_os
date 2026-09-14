@@ -97,16 +97,21 @@ export const architectureAgents = pgTable(
 );
 
 // Call-health signals that can't be derived after the fact from turn_logs
-// alone -- both are genuine gaps found while designing this: a fallback
-// response (architecture.run() threw) was never logged at all before this,
-// and a turn-dedup conflict (ElevenLabs sending >1 request for one
-// respondent turn) only ever left a trace as the *winner's* row in
-// turn_claims, with no record that a conflict happened at all. This table
-// is that missing record, written at the point each event actually occurs
-// in app/api/architectures/[name]/chat/completions/route.ts.
+// alone -- genuine gaps found while designing this: a fallback response
+// (architecture.run() threw) was never logged at all before this; a
+// turn-dedup conflict (ElevenLabs sending >1 request for one respondent
+// turn) only ever left a trace as the *winner's* row in turn_claims, with
+// no record a conflict happened at all; and strategist/fanout's after()-
+// scheduled background reasoning calls had no observable trace when they
+// silently didn't run (found on a real test call -- zero of their own
+// turn_logs rows, no error anywhere reachable from this environment).
+// This table is that missing record, written at the point each event
+// actually occurs (the webhook route for fallback/turn_conflict, each
+// architecture's background-call functions for background_reasoning_*).
 export const callHealthEvents = pgTable("call_health_events", {
   id: uuid("id").primaryKey().defaultRandom(),
-  eventType: text("event_type").notNull(), // "fallback" | "turn_conflict"
+  // "fallback" | "turn_conflict" | "background_reasoning_started" | "background_reasoning_failed"
+  eventType: text("event_type").notNull(),
   conversationFingerprint: text("conversation_fingerprint"),
   architecture: text("architecture").notNull(),
   detail: jsonb("detail").notNull().default({}),

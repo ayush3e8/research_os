@@ -21,6 +21,7 @@ import { anthropic, MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
 import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { updateConversationState } from "@/lib/conversation-state";
+import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
 
@@ -120,15 +121,30 @@ async function runAdvisorCall(args: {
 
     return text;
   } catch (err) {
+    // Still logged (not just console.error, which this environment can't
+    // see) so a failure here is diagnosable rather than invisible.
     console.error(`fanout advisor call "${args.callType}" failed:`, err);
+    await logCallHealthEvent({
+      eventType: "background_reasoning_failed",
+      conversationFingerprint: args.conversationFingerprint,
+      architecture: "fanout",
+      detail: { callType: args.callType, error: err instanceof Error ? err.message : String(err) },
+    });
     return "";
   }
 }
 
 /** Runs after the response is already on its way out -- see the module
  * docstring (and strategist.ts's) for why this writes state itself rather
- * than returning it from run(). */
+ * than returning it from run(). Starts with a call_health_event purely for
+ * diagnosability -- see strategist.ts's runStrategistCall for why. */
 async function runFanoutReasoning(req: ArchitectureRequest, moderatorReply: string): Promise<void> {
+  await logCallHealthEvent({
+    eventType: "background_reasoning_started",
+    conversationFingerprint: req.fingerprint,
+    architecture: "fanout",
+  });
+
   const transcript: AnthropicMessage[] = [...req.messages, { role: "assistant", content: moderatorReply }];
   const elapsedMinutes = (Date.now() - req.firstSeenAt.getTime()) / 60_000;
 

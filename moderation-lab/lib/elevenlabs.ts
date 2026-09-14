@@ -55,9 +55,22 @@ export async function createAgent(opts: {
   ttsModelId?: string;
   llm: AgentLlmConfig;
 }): Promise<string> {
+  // The End Call system tool is only added automatically to agents created
+  // in the ElevenLabs dashboard -- confirmed via their docs -- agents
+  // created via this API do NOT get it unless explicitly configured here.
+  // Without this, every architecture's system prompt saying "use the
+  // end_call tool" was telling the moderator to call a tool that was never
+  // actually given to it (confirmed against a real logged request:
+  // raw_request_body.tools came back undefined on every single turn of
+  // every call so far) -- every call so far has had to be hung up manually
+  // rather than ending itself.
+  const builtInTools = {
+    end_call: { type: "system", name: "end_call", description: "", params: { system_tool_type: "end_call" } },
+  };
+
   const prompt: Record<string, unknown> =
     opts.llm.kind === "native"
-      ? { prompt: opts.systemPrompt, llm: opts.llm.model }
+      ? { prompt: opts.systemPrompt, llm: opts.llm.model, built_in_tools: builtInTools }
       : {
           prompt: opts.systemPrompt,
           llm: "custom-llm",
@@ -66,6 +79,7 @@ export async function createAgent(opts: {
             model_id: opts.llm.modelId ?? null,
             api_key: { secret_id: opts.llm.secretId },
           },
+          built_in_tools: builtInTools,
         };
 
   const res = await fetch(`${API_BASE}/v1/convai/agents/create`, {

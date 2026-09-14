@@ -31,6 +31,7 @@ import { anthropic, MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
 import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { updateConversationState } from "@/lib/conversation-state";
+import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
 
@@ -71,11 +72,22 @@ Read the transcript so far and write 1-3 short sentences of concrete, tactical g
 }
 
 /** Runs after the response is already on its way out -- see module
- * docstring for why this writes state itself instead of returning it. */
+ * docstring for why this writes state itself instead of returning it.
+ * Brackets itself with call_health_events (background_reasoning_started /
+ * _failed) purely for diagnosability -- a real test call showed zero
+ * strategist-callType turn_logs rows with no visible error anywhere (no
+ * Vercel log access in this environment), so whether after() even invokes
+ * this at all was otherwise unverifiable. */
 async function runStrategistCall(req: ArchitectureRequest, moderatorReply: string): Promise<void> {
   const startedAt = Date.now();
   const transcript: AnthropicMessage[] = [...req.messages, { role: "assistant", content: moderatorReply }];
   const system = strategistSystemPrompt(req.guide);
+
+  await logCallHealthEvent({
+    eventType: "background_reasoning_started",
+    conversationFingerprint: req.fingerprint,
+    architecture: "strategist",
+  });
 
   try {
     const completion = await anthropic().messages.create({
@@ -110,7 +122,15 @@ async function runStrategistCall(req: ArchitectureRequest, moderatorReply: strin
   } catch (err) {
     // A background reasoning call failing should never surface anywhere --
     // worst case the next turn just reuses whatever guidance came before.
+    // Still logged (not just console.error, which this environment can't
+    // see) so a failure here is diagnosable rather than invisible.
     console.error("strategist background call failed:", err);
+    await logCallHealthEvent({
+      eventType: "background_reasoning_failed",
+      conversationFingerprint: req.fingerprint,
+      architecture: "strategist",
+      detail: { error: err instanceof Error ? err.message : String(err) },
+    });
   }
 }
 
