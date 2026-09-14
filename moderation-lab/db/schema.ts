@@ -111,6 +111,7 @@ export const architectureAgents = pgTable(
 export const callHealthEvents = pgTable("call_health_events", {
   id: uuid("id").primaryKey().defaultRandom(),
   // "fallback" | "turn_conflict" | "background_reasoning_started" | "background_reasoning_failed"
+  // | "live_reasoning_started" | "live_reasoning_failed" (livefanout's synchronous advisors)
   eventType: text("event_type").notNull(),
   conversationFingerprint: text("conversation_fingerprint"),
   architecture: text("architecture").notNull(),

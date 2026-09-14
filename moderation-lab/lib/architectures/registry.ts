@@ -1,6 +1,7 @@
 import { baselineArchitecture } from "./baseline";
 import { strategistArchitecture } from "./strategist";
 import { fanoutArchitecture } from "./fanout";
+import { livefanoutArchitecture } from "./livefanout";
 import type { Architecture } from "./types";
 
 /**
@@ -12,6 +13,7 @@ export const ARCHITECTURES: Record<string, Architecture> = {
   baseline: baselineArchitecture,
   strategist: strategistArchitecture,
   fanout: fanoutArchitecture,
+  livefanout: livefanoutArchitecture,
 };
 
 export function getArchitecture(name: string): Architecture | undefined {

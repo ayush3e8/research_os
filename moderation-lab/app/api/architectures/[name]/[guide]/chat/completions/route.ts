@@ -47,6 +47,13 @@ import type { OpenAIMessage, OpenAITool } from "@/lib/openai-translate";
 // route touches (Anthropic SDK, Neon's serverless driver, turn-dedup's
 // Web Crypto hashing) is fetch/Web-Crypto-based with no Node-only APIs, so
 // nothing else here needs to change for edge compatibility.
+//
+// livefanout doesn't schedule anything via after() at all -- its three
+// advisors run synchronously, in parallel, before the moderator call, all
+// within this same invocation -- but it still benefits from the same
+// generous maxDuration: up to four sequential Claude round trips (three
+// concurrent advisors, then the moderator) need real time to complete
+// before this route's own response goes out.
 export const runtime = "edge";
 export const maxDuration = 60;
 

@@ -16,7 +16,17 @@ import { db } from "@/db";
 import { callHealthEvents } from "@/db/schema";
 
 export async function logCallHealthEvent(input: {
-  eventType: "fallback" | "turn_conflict" | "background_reasoning_started" | "background_reasoning_failed";
+  eventType:
+    | "fallback"
+    | "turn_conflict"
+    | "background_reasoning_started"
+    | "background_reasoning_failed"
+    // livefanout's advisors run synchronously on the request's critical
+    // path, not via after() -- kept distinct from the background_* events
+    // above so a hang or failure here isn't misread as the same class of
+    // problem (an after() callback never firing) those exist to diagnose.
+    | "live_reasoning_started"
+    | "live_reasoning_failed";
   conversationFingerprint: string | null;
   architecture: string;
   detail?: Record<string, unknown>;
