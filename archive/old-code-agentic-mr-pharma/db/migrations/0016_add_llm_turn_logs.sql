@@ -1,0 +1,1 @@
+ALTER TABLE "llm_turn_logs" ADD COLUMN "raw_request_body" jsonb NOT NULL;

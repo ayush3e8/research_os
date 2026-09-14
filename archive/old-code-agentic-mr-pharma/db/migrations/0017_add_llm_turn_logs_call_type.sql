@@ -1,0 +1,1 @@
+ALTER TABLE "llm_turn_logs" ADD COLUMN "call_type" text DEFAULT 'moderator' NOT NULL;
