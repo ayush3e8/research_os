@@ -573,6 +573,297 @@ export const FITNESS_GUIDE: Guide = {
   ],
 };
 
+/**
+ * Adapted from a client-supplied discussion guide for the oncologist TIH
+ * pilot. Two structural adaptations were needed to fit this app's actual
+ * capabilities, not just this guide's content:
+ *
+ * 1. No branching support -- GuideQuestion is a flat list the moderator
+ *    reads in full every turn (see formatGuideForPrompt below), not a
+ *    decision tree. The source guide's routing question (a "have you
+ *    treated TIH" screen that sends the respondent down a direct-experience
+ *    or no-experience follow-up) is expressed as ONE question whose `note`
+ *    spells out both branches explicitly -- the moderator already handles
+ *    conditional judgment this way for every other guide's probes.
+ * 2. No visual/document display -- this is a voice-only call. The source
+ *    guide's tap-to-answer scale questions became verbal `rating` fields
+ *    (asked aloud, then probed why), matching every other guide's rating
+ *    pattern. Its stimulus reveal ("[SHOW STIMULUS: tpp_unbranded]") has no
+ *    equivalent at all -- there's no way to show a respondent a document
+ *    mid-call -- so it became a placeholder to be READ aloud instead.
+ *
+ * NOT yet pilot-ready: the actual treatment-profile content (mechanism,
+ * administration/monitoring, efficacy, safety incl. the allergic-type-
+ * reaction subset) was referenced by the source guide's stimulus code but
+ * never supplied -- only the code itself was. That content has to come from
+ * the client; it is real clinical/efficacy/safety material that must not be
+ * invented. See the "stimulus: treatment profile" question's `ask` field
+ * below for the exact placeholder to replace.
+ */
+export const ONCOLOGY_TIH_GUIDE: Guide = {
+  studyTopic:
+    "How community oncologists handle referral of rare, complex tumor-associated conditions -- specifically " +
+    "tumor-induced hyperinsulinism (TIH) -- and what it would take for them to manage such patients themselves " +
+    "rather than refer them out.",
+  targetDurationMinutes: 30,
+  statedPurpose:
+    "We're doing research on how oncologists in community practice make referral decisions for rare and " +
+    "complex cases, including a condition called tumor-induced hyperinsulinism. There are no wrong answers " +
+    "here -- we're just trying to understand how these decisions actually play out in real practice.",
+  researchObjective:
+    "You're being interviewed on behalf of a pharmaceutical company assessing the commercial and adoption " +
+    "dynamics for an investigational treatment for tumor-induced hyperinsulinism (TIH), an ultra-rare " +
+    "condition currently managed almost exclusively by referral to specialized centers of excellence (CoEs). " +
+    "The company needs real answers to: (1) whether community oncologists would ever prescribe a new TIH " +
+    "treatment themselves rather than refer, or whether referral is a fundamentally unmovable position for " +
+    "this population; (2) what specific real-world evidence, track record, or messaging would actually move " +
+    "that threshold, versus what's just a rationalization on top of an already-fixed clinical/relationship/ " +
+    "economic instinct; (3) whether launching through a CoE-only channel at first would be a temporary phase " +
+    "physicians would outgrow, or something that permanently entrenches the referral habit; (4) how referral-" +
+    "relationship inertia and reimbursement/economics factor in versus purely clinical judgment. As the " +
+    "evaluator, watch whether the moderator actually pins down concrete, forecast-usable answers to these -- " +
+    "especially the track-record threshold and the always-refer-vs-movable question -- not just whether the " +
+    "conversation feels pleasant.",
+  openingScript:
+    "Hi, thank you so much for making time today. I'm doing some research on how oncologists in community " +
+    "practice handle referral decisions for rare and complex cases -- there are no wrong answers, I'm just " +
+    "trying to understand how this actually works in your day-to-day practice. Ready to get started?",
+  closingScript:
+    "This has been genuinely useful, thank you for being so candid and for walking me through all of that. " +
+    "That's everything I wanted to cover today -- have a great rest of your day.",
+  questions: [
+    {
+      topic: "practice setting (community-practice screen)",
+      ask: "To get us started, tell me a bit about your practice — what kind of setting do you work in and what's your patient mix like?",
+      targetMinutes: 1.5,
+      note:
+        "Confirms the community-practice inclusion criterion. If setting is vague, gently confirm they're not " +
+        "primarily at an academic medical center or NCI-designated/specialized center of excellence before moving on.",
+    },
+    {
+      topic: "rare/complex case handling",
+      ask: "When a rare or complex tumor-associated case comes along, well outside the usual, walk me through what typically happens next.",
+      targetMinutes: 1.5,
+      note:
+        "Let refer/manage/co-manage emerge in their own words rather than naming a clean either/or. If they draw " +
+        "a blank, concretize with a neutral example — but do NOT seed TIH. Flag whether any 'refer' instinct is " +
+        "driven by clinical appropriateness vs. relationship/economics/inertia.",
+    },
+    {
+      topic: "TIH familiarity",
+      ask:
+        "I'd like to talk about a condition called tumor-induced hyperinsulinism, or TIH — where certain tumors " +
+        "cause severe, hard-to-control low blood sugar. How familiar are you with it? It's completely fine if " +
+        "it's not something you see often.",
+      targetMinutes: 1,
+    },
+    {
+      topic: "TIH destination instinct (unprimed)",
+      ask: "When a TIH case actually surfaces, where do you imagine that patient ends up being managed?",
+      targetMinutes: 1,
+      note:
+        "Early, unprimed read on the open assumption that TIH patients go to centers of excellence — deeper " +
+        "probing comes later, so capture the instinct here. A respondent who has seen a TIH patient can answer " +
+        "from memory.",
+    },
+    {
+      topic: "direct-experience routing (branches)",
+      ask: "Have you ever personally treated or co-managed someone with TIH?",
+      targetMinutes: 2.5,
+      note:
+        "Routing question -- take exactly ONE of the two follow-ups below based on the answer, never both, and " +
+        "skip the other track's questions later in this guide entirely (they're each labeled which track they " +
+        "belong to). IF YES (direct-experience track): walk them through the last TIH patient they encountered " +
+        "— how it was managed and what role they personally played; fold in their actual involvement and any " +
+        "referral that happened; naturally cover which treatments were tried, including off-label options like " +
+        "steroids, octreotide, or pasireotide, and how well those held up. IF NO (no-experience track): ask them " +
+        "to suppose a patient came in with severe, hard-to-control hypoglycemia driven by their tumor, and walk " +
+        "through how they'd realistically approach it — let treat-yourself vs. co-manage vs. send-out emerge " +
+        "naturally; this feeds the no-experience probe on comfort taking such a patient on.",
+    },
+    {
+      topic: "referral relationships",
+      ask: "When you send a patient to a specialized center, how do those relationships actually work for you?",
+      targetMinutes: 1.5,
+      note:
+        "Opens the referral-relationship/CoE thread. Let both the value and the cost side (losing the patient, " +
+        "revenue) emerge, but let them lead rather than forcing a two-part ask.",
+    },
+    {
+      topic: "re-test destination instinct",
+      ask: "Now that we've talked the referral picture through, does your earlier instinct about where TIH patients end up still hold, or has your thinking shifted?",
+      targetMinutes: 1,
+      note:
+        "Anchor to the instinct captured at the 'TIH destination instinct' question earlier. Key re-test of the " +
+        "open assumption that these patients are managed almost entirely at centers of excellence.",
+    },
+    {
+      topic: "stimulus: treatment profile",
+      // FICTIONAL PLACEHOLDER, not the client's real profile -- filled in
+      // on request to make this guide testable end-to-end before the real
+      // "tpp_unbranded" content exists. No real drug name, real trial data,
+      // or real safety signal is represented here; every number and detail
+      // below is invented for testing. MUST be swapped for the client's
+      // actual profile text before this guide is used with a real
+      // oncologist -- do not treat any of this as real clinical content.
+      ask:
+        "I'd like to walk you through a brief profile of an investigational treatment for tumor-induced " +
+        "hyperinsulinism — take your time with the whole thing, and let me know when you've absorbed it. " +
+        "This is a monoclonal antibody, given as a periodic IV infusion roughly once every four weeks in an " +
+        "infusion-capable setting, that works by blocking excess insulin signaling directly at the receptor " +
+        "level, rather than trying to shrink or remove the underlying tumor. Patients need routine blood " +
+        "glucose monitoring around each infusion, plus standard infusion-reaction precautions. In an early-phase " +
+        "study, about seven in ten patients reached stable, controlled blood sugar without needing rescue " +
+        "glucose, typically within two to three infusions. The most common side effects were mild — infusion-" +
+        "site reactions and transient fatigue — but a small subset, roughly one in twenty patients, had a " +
+        "genuine allergic-type reaction requiring premedication or, in a couple of cases, discontinuation. " +
+        "What's your overall first impression?",
+      targetMinutes: 2,
+      note:
+        "Get through the whole profile before asking for their impression -- mechanism, administration/" +
+        "monitoring, efficacy, safety, all of it. Reminder for whoever maintains this guide: the `ask` text " +
+        "above is a fictional placeholder (see the code comment on this question) and must be replaced with " +
+        "the client's real treatment-profile content before any real oncologist call.",
+    },
+    {
+      topic: "efficacy impression",
+      ask: "What's your impression of the efficacy the profile describes?",
+      targetMinutes: 1,
+      note:
+        "Keep to their read of efficacy — resist a refer-vs-prescribe verdict here since admin and safety come " +
+        "next. If they lean anyway, note it and say we'll return to the full picture.",
+    },
+    {
+      topic: "safety impression incl. allergic reactions",
+      ask: "What's your reaction to the safety picture, including the subset of patients with genuine allergic-type reactions?",
+      targetMinutes: 1.5,
+      note:
+        "The profile includes both manageable side effects and allergic-type reactions. Probe how the " +
+        "allergic-type reactions specifically affect their own willingness to prescribe.",
+    },
+    {
+      topic: "administration/monitoring feel (rating + why)",
+      ask:
+        "Now picture actually delivering this in your own setting — the periodic IV infusions, glucose " +
+        "monitoring, watching for hypersensitivity. How manageable does that feel?",
+      targetMinutes: 2,
+      rating: {
+        prompt:
+          "How comfortable would you feel managing the administration and monitoring described in this " +
+          "treatment profile (periodic IV infusion, glucose monitoring, and watching for allergic-type " +
+          "reactions) in your own community practice?",
+        scale: "1 (not at all comfortable) to 5 (extremely comfortable)",
+      },
+      note:
+        "Ask the open question verbally and get a real answer before asking for the rating number. Build on any " +
+        "admin/monitoring concerns already surfaced. (Source guide presented this as a tap-to-answer 5-point " +
+        "scale -- converted to a verbal ask since this app is voice-only.)",
+    },
+    {
+      topic: "direct-experience counterfactual (direct-experience track only)",
+      ask:
+        "Thinking back to that specific patient — if a purpose-built treatment like this had existed then, " +
+        "would you have kept them and managed them yourself, or still sent them out?",
+      targetMinutes: 1.5,
+      note:
+        "DIRECT-EXPERIENCE TRACK ONLY -- skip entirely for respondents who took the no-experience path at the " +
+        "routing question earlier. Sharpest real-world adopt signal from direct-experience respondents. Push on " +
+        "the reasoning.",
+    },
+    {
+      topic: "track record needed to prescribe",
+      ask: "For a treatment like this, what real-world track record — how long, and showing what specifically — would you need before you'd prescribe it yourself rather than refer?",
+      targetMinutes: 2.5,
+      note:
+        "MOST FORECAST-CRITICAL QUESTION in this guide -- protect its time even if running behind. Push for " +
+        "concreteness: years, patient counts, which safety signals must have resolved, and whether evidence " +
+        "must come from peers, published data, or the centers.",
+    },
+    {
+      topic: "likelihood to self-manage (rating + why)",
+      ask: "If that track record existed, how likely would you be to take one of these patients on yourself?",
+      targetMinutes: 1.5,
+      rating: {
+        prompt:
+          "Assuming a strong multi-year real-world track record existed, how likely would you be to prescribe " +
+          "an approved TIH treatment yourself rather than refer the patient to a specialized center?",
+        scale: "1 (would always refer) to 5 (would definitely prescribe myself)",
+      },
+      note:
+        "Ask verbally and get a real answer before asking for the rating number. Then probe what single thing " +
+        "— a change to the profile, a person, or a moment — would actually move them from referring to " +
+        "prescribing, and whether that threshold is movable or the start of an unmovable position. (Source " +
+        "guide presented this as a tap-to-answer 5-point scale -- converted to a verbal ask, same as the " +
+        "administration/monitoring question above.)",
+    },
+    {
+      topic: "reimbursement & economics",
+      ask: "Setting the clinical side aside — how would the reimbursement and economics of taking a TIH patient on directly work in a practice like yours?",
+      targetMinutes: 1.5,
+      note:
+        "Pivot to buy-and-bill vs. specialty pharmacy, infusion cost, staffing, reimbursement risk on an " +
+        "ultra-rare drug. Listen for whether economics is a genuine barrier or a rationalization on a " +
+        "clinical/relationship instinct. Keep at the level they can speak to.",
+    },
+    {
+      topic: "CoE-only launch: temporary vs. entrenching",
+      ask:
+        "A treatment like this would likely launch only through a handful of specialized centers at first. Do " +
+        "you see that CoE-only starting point as a temporary phase you'd outgrow, or something that would " +
+        "entrench referring these patients out permanently?",
+      targetMinutes: 1.5,
+      note:
+        "Top-tier strategic insight. Listen for temporary-phase vs. permanent-entrenchment framing and whether " +
+        "an initial CoE-only channel hardens the referral habit for good.",
+    },
+    {
+      topic: "awareness/diffusion channel",
+      ask: "How would you first even become aware that a treatment like this had built up a track record worth reconsidering, and how long after launch would that reach you?",
+      targetMinutes: 1,
+      note: "WHO-informs-me / diffusion angle. Channel and timing are linked — let them answer both together if the answer flows.",
+    },
+    {
+      topic: "relationship inertia",
+      ask: "How much does simply not wanting to break an established, trusted handoff with a center factor into whether you'd take one of these patients on yourself?",
+      targetMinutes: 1,
+      note:
+        "Anchor to the referral relationships they described earlier. The distinct thing here is relationship " +
+        "inertia as a deterrent to self-adoption specifically.",
+    },
+    {
+      topic: "always-refer capstone",
+      ask: "Some physicians tell us that for a condition this rare, they'd always refer these patients out no matter what evidence emerged. Where do you land, and what's the reasoning behind it?",
+      targetMinutes: 1.5,
+      note:
+        "Dedicated capstone on 'always refer' vs. movable-threshold. Reference any earlier lean and push for the " +
+        "reasoning underneath. Capture, in their own words, what an unmovable position sounds like or what " +
+        "would genuinely move them.",
+    },
+    {
+      topic: "messaging/framing needed",
+      ask: "Beyond the raw data — what would a profile, or the people presenting it, actually need to say to earn your confidence enough to consider prescribing?",
+      targetMinutes: 1,
+      note:
+        "Messaging/communication angle. Steer toward how the offering must frame itself, especially the honest " +
+        "but imperfect safety picture — what reassurances resonate vs. ring hollow.",
+    },
+    {
+      topic: "forward-looking synthesis",
+      ask: "Before we wrap, in a sentence or two, where do you land overall on who should be managing these patients going forward?",
+      targetMinutes: 1,
+      note:
+        "Forward-looking synthesis of the whole conversation, not a re-litigation of the always-refer capstone. " +
+        "Aim for a clean, quotable summation in their own language.",
+    },
+    {
+      topic: "anything else + close",
+      ask: "Is there anything we haven't touched on that you think matters to this decision?",
+      targetMinutes: 0.5,
+      note: "Then thank them warmly for their time.",
+    },
+  ],
+};
+
 /** Every guide the app can run, keyed by the name used in the manual-test
  * UI, the ElevenLabs agent's baked-in webhook URL, and conversation_state's
  * stored `guide` column. */
@@ -582,6 +873,7 @@ export const GUIDES: Record<string, Guide> = {
   streaming: STREAMING_GUIDE,
   fitness: FITNESS_GUIDE,
   biopharma: BIOPHARMA_GUIDE,
+  oncology_tih: ONCOLOGY_TIH_GUIDE,
 };
 
 export function getGuide(name: string): Guide | undefined {
