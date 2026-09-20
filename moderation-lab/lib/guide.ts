@@ -56,6 +56,22 @@ export type GuideQuestion = {
   /** Guidance for the moderator on what this question is really testing --
    * not read aloud, just steering. */
   note?: string;
+  /**
+   * An explicit stopping condition, not just context: the moderator is
+   * instructed to keep probing this topic -- using its own judgment,
+   * drawing on `probes` if helpful -- until this is genuinely satisfied,
+   * rather than treating a single scripted question (or a fixed list of
+   * probes) as the whole job. Optional because most of the app's other
+   * guides don't have one yet; only oncology_tih uses this so far, added
+   * after a real observed failure: splitting a compound question into a
+   * probe made that probe skippable ("if needed"), and a real test call
+   * skipped a probe (patient mix) the guide actually wanted covered every
+   * time. A goal is meant to restore that reliability without reintroducing
+   * the compounding the probe split was fixing -- the moderator still asks
+   * one thing at a time, it just doesn't move on until the goal is met (or
+   * it's genuinely out of time for this topic).
+   */
+  goal?: string;
 };
 
 export type Guide = {
@@ -636,6 +652,9 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "practice setting (community-practice screen)",
       ask: "To get us started, tell me a bit about your practice — what kind of setting do you work in?",
       targetMinutes: 1.5,
+      goal:
+        "Confirmed the respondent is community practice (not primarily academic/NCI-designated/COE), and have a " +
+        "concrete sense of their setting and patient mix.",
       probes: ["What's your patient mix like?"],
       note:
         "Confirms the community-practice inclusion criterion. If setting is vague, gently confirm they're not " +
@@ -645,6 +664,10 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "rare/complex case handling",
       ask: "When a rare or complex tumor-associated case comes along, well outside the usual, walk me through what typically happens next.",
       targetMinutes: 1.5,
+      goal:
+        "Have a concrete, specific account of what actually happens when a rare/complex case comes up, with the " +
+        "refer/manage/co-manage instinct in their own words and whether it's driven by clinical judgment vs. " +
+        "relationship/economics/inertia.",
       note:
         "Let refer/manage/co-manage emerge in their own words rather than naming a clean either/or. If they draw " +
         "a blank, concretize with a neutral example — but do NOT seed TIH. Flag whether any 'refer' instinct is " +
@@ -657,11 +680,15 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
         "cause severe, hard-to-control low blood sugar. How familiar are you with it? It's completely fine if " +
         "it's not something you see often.",
       targetMinutes: 1,
+      goal: "Know their real level of familiarity with TIH, without them feeling judged for low familiarity.",
     },
     {
       topic: "TIH destination instinct (unprimed)",
       ask: "When a TIH case actually surfaces, where do you imagine that patient ends up being managed?",
       targetMinutes: 1,
+      goal:
+        "Captured their unprimed, honest first instinct on where TIH patients end up being managed, before " +
+        "further discussion shapes it.",
       note:
         "Early, unprimed read on the open assumption that TIH patients go to centers of excellence — deeper " +
         "probing comes later, so capture the instinct here. A respondent who has seen a TIH patient can answer " +
@@ -671,6 +698,11 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "direct-experience routing (branches)",
       ask: "Have you ever personally treated or co-managed someone with TIH?",
       targetMinutes: 2.5,
+      goal:
+        "Established whether they've personally treated/co-managed a TIH patient, and -- for whichever track " +
+        "applies -- have a concrete account: for direct experience, the last patient's management, their own " +
+        "role, and what treatments were tried and how they held up; for no experience, a realistic walk-through " +
+        "of how they'd approach such a patient.",
       note:
         "Routing question -- take exactly ONE of the two follow-ups below based on the answer, never both, and " +
         "skip the other track's questions later in this guide entirely (they're each labeled which track they " +
@@ -687,6 +719,10 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "referral relationships",
       ask: "When you send a patient to a specialized center, how do those relationships actually work for you?",
       targetMinutes: 1.5,
+      goal:
+        "Understand, in their own words, how their referral relationships with specialized centers actually " +
+        "work, including both what they get out of it and what it costs them (losing the patient, revenue) if " +
+        "either comes up naturally.",
       note:
         "Opens the referral-relationship/CoE thread. Let both the value and the cost side (losing the patient, " +
         "revenue) emerge, but let them lead rather than forcing a two-part ask.",
@@ -695,6 +731,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "re-test destination instinct",
       ask: "Now that we've talked the referral picture through, does your earlier instinct about where TIH patients end up still hold, or has your thinking shifted?",
       targetMinutes: 1,
+      goal: "Know whether their earlier destination instinct held or shifted after discussing referral relationships, and why.",
       note:
         "Anchor to the instinct captured at the 'TIH destination instinct' question earlier. Key re-test of the " +
         "open assumption that these patients are managed almost entirely at centers of excellence.",
@@ -721,6 +758,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
         "genuine allergic-type reaction requiring premedication or, in a couple of cases, discontinuation. " +
         "What's your overall first impression?",
       targetMinutes: 2,
+      goal: "Confirmed they've absorbed the whole profile (mechanism, administration/monitoring, efficacy, safety) and captured a genuine first impression, not a rushed one.",
       note:
         "Get through the whole profile before asking for their impression -- mechanism, administration/" +
         "monitoring, efficacy, safety, all of it. Reminder for whoever maintains this guide: the `ask` text " +
@@ -731,6 +769,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "efficacy impression",
       ask: "What's your impression of the efficacy the profile describes?",
       targetMinutes: 1,
+      goal: "Have their genuine read on the efficacy data specifically, without them jumping ahead to a refer-vs-prescribe verdict.",
       note:
         "Keep to their read of efficacy — resist a refer-vs-prescribe verdict here since admin and safety come " +
         "next. If they lean anyway, note it and say we'll return to the full picture.",
@@ -739,6 +778,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "safety impression incl. allergic reactions",
       ask: "What's your reaction to the safety picture, including the subset of patients with genuine allergic-type reactions?",
       targetMinutes: 1.5,
+      goal: "Know how the safety picture overall, and the allergic-type-reaction subset specifically, actually affects their willingness to prescribe.",
       note:
         "The profile includes both manageable side effects and allergic-type reactions. Probe how the " +
         "allergic-type reactions specifically affect their own willingness to prescribe.",
@@ -749,6 +789,9 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
         "Now picture actually delivering this in your own setting — the periodic IV infusions, glucose " +
         "monitoring, watching for hypersensitivity. How manageable does that feel?",
       targetMinutes: 2,
+      goal:
+        "Have both a real verbal answer on how manageable the administration/monitoring burden feels in their " +
+        "own setting, and the numeric rating, in that order.",
       rating: {
         prompt:
           "How comfortable would you feel managing the administration and monitoring described in this " +
@@ -767,6 +810,9 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
         "Thinking back to that specific patient — if a purpose-built treatment like this had existed then, " +
         "would you have kept them and managed them yourself, or still sent them out?",
       targetMinutes: 1.5,
+      goal:
+        "(Direct-experience track only.) Know whether they'd have kept and managed that specific past patient " +
+        "themselves with this treatment available, or still referred, and the reasoning behind it.",
       note:
         "DIRECT-EXPERIENCE TRACK ONLY -- skip entirely for respondents who took the no-experience path at the " +
         "routing question earlier. Sharpest real-world adopt signal from direct-experience respondents. Push on " +
@@ -776,6 +822,10 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "track record needed to prescribe",
       ask: "For a treatment like this, what real-world track record would you need before you'd prescribe it yourself rather than refer?",
       targetMinutes: 2.5,
+      goal:
+        "Have a concrete answer covering duration, what specifically it would need to show (patient counts, " +
+        "which safety signals resolved), and whose evidence would count (peers, published data, or the " +
+        "centers) -- not a vague answer on any of these.",
       probes: [
         "How long would that track record need to be?",
         "What specifically would it need to show — patient counts, which safety signals resolved?",
@@ -789,6 +839,9 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "likelihood to self-manage (rating + why)",
       ask: "If that track record existed, how likely would you be to take one of these patients on yourself?",
       targetMinutes: 1.5,
+      goal:
+        "Have the numeric rating, plus a concrete answer on what single thing would move them from referring to " +
+        "prescribing, and whether that threshold is genuinely movable or effectively fixed.",
       rating: {
         prompt:
           "Assuming a strong multi-year real-world track record existed, how likely would you be to prescribe " +
@@ -808,6 +861,9 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "reimbursement & economics",
       ask: "Setting the clinical side aside — how would the reimbursement and economics of taking a TIH patient on directly work in a practice like yours?",
       targetMinutes: 1.5,
+      goal:
+        "Understand how the economics would realistically work in their setting, and whether economics is a " +
+        "genuine barrier or a rationalization sitting on top of an already-fixed clinical/relationship instinct.",
       probes: [
         "Would this run through buy-and-bill, or specialty pharmacy?",
         "What would the infusion cost and staffing look like in your setting?",
@@ -824,6 +880,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
         "you see that CoE-only starting point as a temporary phase you'd outgrow, or something that would " +
         "entrench referring these patients out permanently?",
       targetMinutes: 1.5,
+      goal: "Know whether they see a CoE-only launch as a phase they'd outgrow or something that permanently entrenches the referral habit, with their reasoning.",
       note:
         "Top-tier strategic insight. Listen for temporary-phase vs. permanent-entrenchment framing and whether " +
         "an initial CoE-only channel hardens the referral habit for good.",
@@ -832,6 +889,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "awareness/diffusion channel",
       ask: "How would you first even become aware that a treatment like this had built up a track record worth reconsidering?",
       targetMinutes: 1,
+      goal: "Know both how they'd realistically become aware of a track record worth reconsidering, and roughly how long after launch that awareness would reach them.",
       probes: ["About how long after launch would that reach you?"],
       note: "WHO-informs-me / diffusion angle.",
     },
@@ -839,6 +897,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "relationship inertia",
       ask: "How much does simply not wanting to break an established, trusted handoff with a center factor into whether you'd take one of these patients on yourself?",
       targetMinutes: 1,
+      goal: "Know how much simply not wanting to disrupt an established, trusted referral relationship factors into their own self-adoption decision, distinct from clinical or economic reasoning.",
       note:
         "Anchor to the referral relationships they described earlier. The distinct thing here is relationship " +
         "inertia as a deterrent to self-adoption specifically.",
@@ -847,6 +906,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "always-refer capstone",
       ask: "Some physicians tell us that for a condition this rare, they'd always refer these patients out no matter what evidence emerged. Where do you land?",
       targetMinutes: 1.5,
+      goal: "Have a clear position on always-refer vs. movable-threshold, with the actual reasoning underneath it, in their own words.",
       probes: ["What's the reasoning behind that?"],
       note:
         "Dedicated capstone on 'always refer' vs. movable-threshold. Reference any earlier lean and push for the " +
@@ -857,6 +917,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "messaging/framing needed",
       ask: "Beyond the raw data — what would a profile, or the people presenting it, actually need to say to earn your confidence enough to consider prescribing?",
       targetMinutes: 1,
+      goal: "Know specifically what a profile or the people presenting it would need to say to earn enough confidence to consider prescribing, including how the safety picture should be framed.",
       note:
         "Messaging/communication angle. Steer toward how the offering must frame itself, especially the honest " +
         "but imperfect safety picture — what reassurances resonate vs. ring hollow.",
@@ -865,6 +926,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "forward-looking synthesis",
       ask: "Before we wrap, in a sentence or two, where do you land overall on who should be managing these patients going forward?",
       targetMinutes: 1,
+      goal: "Have a clean, quotable, forward-looking statement in their own words on who should be managing these patients going forward.",
       note:
         "Forward-looking synthesis of the whole conversation, not a re-litigation of the always-refer capstone. " +
         "Aim for a clean, quotable summation in their own language.",
@@ -873,6 +935,7 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       topic: "anything else + close",
       ask: "Is there anything we haven't touched on that you think matters to this decision?",
       targetMinutes: 0.5,
+      goal: "Given them a genuine opportunity to raise anything unaddressed, then closed warmly.",
       note: "Then thank them warmly for their time.",
     },
   ],
@@ -898,6 +961,13 @@ export function formatGuideForPrompt(guide: Guide): string {
   return guide.questions
     .map((q, i) => {
       const parts = [`${i + 1}. [${q.topic}, ~${q.targetMinutes} min]`, q.ask];
+      if (q.goal) {
+        parts.push(
+          `[GOAL: ${q.goal} -- keep probing this topic, one thing at a time, drawing on the probes below if helpful, ` +
+            `until this is genuinely satisfied, or until you're clearly out of time for it relative to its time budget ` +
+            `above and the overall pacing note -- whichever comes first. A scripted probe list is not itself the goal.]`
+        );
+      }
       if (q.rating) {
         parts.push(`Also ask them to rate it verbally — "${q.rating.prompt}" — ${q.rating.scale} — and get the number.`);
       }
