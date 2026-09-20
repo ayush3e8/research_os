@@ -634,8 +634,9 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
   questions: [
     {
       topic: "practice setting (community-practice screen)",
-      ask: "To get us started, tell me a bit about your practice — what kind of setting do you work in and what's your patient mix like?",
+      ask: "To get us started, tell me a bit about your practice — what kind of setting do you work in?",
       targetMinutes: 1.5,
+      probes: ["What's your patient mix like?"],
       note:
         "Confirms the community-practice inclusion criterion. If setting is vague, gently confirm they're not " +
         "primarily at an academic medical center or NCI-designated/specialized center of excellence before moving on.",
@@ -673,13 +674,14 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       note:
         "Routing question -- take exactly ONE of the two follow-ups below based on the answer, never both, and " +
         "skip the other track's questions later in this guide entirely (they're each labeled which track they " +
-        "belong to). IF YES (direct-experience track): walk them through the last TIH patient they encountered " +
-        "— how it was managed and what role they personally played; fold in their actual involvement and any " +
-        "referral that happened; naturally cover which treatments were tried, including off-label options like " +
-        "steroids, octreotide, or pasireotide, and how well those held up. IF NO (no-experience track): ask them " +
-        "to suppose a patient came in with severe, hard-to-control hypoglycemia driven by their tumor, and walk " +
-        "through how they'd realistically approach it — let treat-yourself vs. co-manage vs. send-out emerge " +
-        "naturally; this feeds the no-experience probe on comfort taking such a patient on.",
+        "belong to). IF YES (direct-experience track): start with one open ask -- walk them through the last " +
+        "TIH patient they encountered and how it was managed. Then, as SEPARATE follow-up turns, one at a time, " +
+        "not combined: (a) what role did they personally play, including any referral that happened; (b) which " +
+        "treatments were tried, including off-label options like steroids, octreotide, or pasireotide; (c) how " +
+        "well those held up. IF NO (no-experience track): ask them to suppose a patient came in with severe, " +
+        "hard-to-control hypoglycemia driven by their tumor, and walk through how they'd realistically approach " +
+        "it — let treat-yourself vs. co-manage vs. send-out emerge naturally; this feeds the no-experience probe " +
+        "on comfort taking such a patient on.",
     },
     {
       topic: "referral relationships",
@@ -772,12 +774,16 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
     },
     {
       topic: "track record needed to prescribe",
-      ask: "For a treatment like this, what real-world track record — how long, and showing what specifically — would you need before you'd prescribe it yourself rather than refer?",
+      ask: "For a treatment like this, what real-world track record would you need before you'd prescribe it yourself rather than refer?",
       targetMinutes: 2.5,
+      probes: [
+        "How long would that track record need to be?",
+        "What specifically would it need to show — patient counts, which safety signals resolved?",
+        "Would that evidence need to come from peers, published data, or the centers themselves?",
+      ],
       note:
-        "MOST FORECAST-CRITICAL QUESTION in this guide -- protect its time even if running behind. Push for " +
-        "concreteness: years, patient counts, which safety signals must have resolved, and whether evidence " +
-        "must come from peers, published data, or the centers.",
+        "MOST FORECAST-CRITICAL QUESTION in this guide -- protect its time even if running behind, and it's " +
+        "worth spending it working through the probes above one at a time rather than rushing to the next topic.",
     },
     {
       topic: "likelihood to self-manage (rating + why)",
@@ -789,21 +795,27 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
           "an approved TIH treatment yourself rather than refer the patient to a specialized center?",
         scale: "1 (would always refer) to 5 (would definitely prescribe myself)",
       },
+      probes: [
+        "What single thing — a change to the profile, a person, or a moment — would actually move you from referring to prescribing?",
+        "Is that threshold movable, or is this closer to an unmovable position?",
+      ],
       note:
-        "Ask verbally and get a real answer before asking for the rating number. Then probe what single thing " +
-        "— a change to the profile, a person, or a moment — would actually move them from referring to " +
-        "prescribing, and whether that threshold is movable or the start of an unmovable position. (Source " +
-        "guide presented this as a tap-to-answer 5-point scale -- converted to a verbal ask, same as the " +
-        "administration/monitoring question above.)",
+        "Ask verbally and get a real answer before asking for the rating number, then work through the probes " +
+        "above one at a time. (Source guide presented this as a tap-to-answer 5-point scale -- converted to a " +
+        "verbal ask, same as the administration/monitoring question above.)",
     },
     {
       topic: "reimbursement & economics",
       ask: "Setting the clinical side aside — how would the reimbursement and economics of taking a TIH patient on directly work in a practice like yours?",
       targetMinutes: 1.5,
+      probes: [
+        "Would this run through buy-and-bill, or specialty pharmacy?",
+        "What would the infusion cost and staffing look like in your setting?",
+        "How much reimbursement risk would you be taking on for an ultra-rare drug like this?",
+      ],
       note:
-        "Pivot to buy-and-bill vs. specialty pharmacy, infusion cost, staffing, reimbursement risk on an " +
-        "ultra-rare drug. Listen for whether economics is a genuine barrier or a rationalization on a " +
-        "clinical/relationship instinct. Keep at the level they can speak to.",
+        "Listen for whether economics is a genuine barrier or a rationalization on a clinical/relationship " +
+        "instinct. Keep at the level they can speak to.",
     },
     {
       topic: "CoE-only launch: temporary vs. entrenching",
@@ -818,9 +830,10 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
     },
     {
       topic: "awareness/diffusion channel",
-      ask: "How would you first even become aware that a treatment like this had built up a track record worth reconsidering, and how long after launch would that reach you?",
+      ask: "How would you first even become aware that a treatment like this had built up a track record worth reconsidering?",
       targetMinutes: 1,
-      note: "WHO-informs-me / diffusion angle. Channel and timing are linked — let them answer both together if the answer flows.",
+      probes: ["About how long after launch would that reach you?"],
+      note: "WHO-informs-me / diffusion angle.",
     },
     {
       topic: "relationship inertia",
@@ -832,8 +845,9 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
     },
     {
       topic: "always-refer capstone",
-      ask: "Some physicians tell us that for a condition this rare, they'd always refer these patients out no matter what evidence emerged. Where do you land, and what's the reasoning behind it?",
+      ask: "Some physicians tell us that for a condition this rare, they'd always refer these patients out no matter what evidence emerged. Where do you land?",
       targetMinutes: 1.5,
+      probes: ["What's the reasoning behind that?"],
       note:
         "Dedicated capstone on 'always refer' vs. movable-threshold. Reference any earlier lean and push for the " +
         "reasoning underneath. Capture, in their own words, what an unmovable position sounds like or what " +
@@ -887,8 +901,22 @@ export function formatGuideForPrompt(guide: Guide): string {
       if (q.rating) {
         parts.push(`Also ask them to rate it verbally — "${q.rating.prompt}" — ${q.rating.scale} — and get the number.`);
       }
-      if (q.probes?.length) parts.push(`(probes if needed: ${q.probes.join("; ")})`);
-      if (q.note) parts.push(`[${q.note}]`);
+      // The reminder is appended here, at render time, rather than typed
+      // into every question's probes/note text -- guarantees it reaches
+      // every question in every guide (present and future) and can't drift
+      // out of sync one question at a time. Deliberately repeated at BOTH
+      // spots rather than said once: the whole guide renders into the
+      // moderator's prompt every single turn, not paginated by "current
+      // question," so a reminder placed anywhere in this function reaches
+      // every turn -- repeating it at every probes/note occurrence is what
+      // makes it land near the exact spot compounding risk actually shows
+      // up, not a generic rule stated once and forgotten by turn 10.
+      if (q.probes?.length) {
+        parts.push(
+          `(probes if needed, one at a time across separate turns -- never combine two of these into a single compound question: ${q.probes.join("; ")})`
+        );
+      }
+      if (q.note) parts.push(`[${q.note} Ask one thing at a time here -- never combine multiple asks into a single compound question.]`);
       return parts.join(" ");
     })
     .join("\n");
