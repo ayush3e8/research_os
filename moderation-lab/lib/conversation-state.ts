@@ -5,8 +5,17 @@
  * a conversation id). Any architecture can stash whatever it needs in
  * `state` (untyped JSON); this module also bootstraps `firstSeenAt` so
  * pacing (see pacing.ts) can compute real elapsed wall-clock time.
+ *
+ * Because the fingerprint is content-derived rather than a real ElevenLabs
+ * conversation id, two DIFFERENT calls can collide on the same key -- same
+ * guide/architecture with an identical opening exchange (no persona
+ * variation yet) hashes identically every time. Confirmed as a real bug:
+ * a fresh call landed on a dormant row from an earlier, already-finished
+ * call, inherited its old `firstSeenAt`, and pacing computed hours of
+ * elapsed time on turn one -- panicking straight into "wrap up now."
+ * getOrInitConversation guards against this with a staleness check below.
  */
-import { eq, sql as drizzleSql } from "drizzle-orm";
+import { and, eq, lt, sql as drizzleSql } from "drizzle-orm";
 import { db } from "@/db";
 import { conversationState } from "@/db/schema";
 
@@ -43,6 +52,14 @@ export type ConversationRow = {
   state: Record<string, unknown>;
 };
 
+// Longer than any realistic gap between two turns of the same live call
+// (even a slow, thoughtful respondent) -- ElevenLabs itself hangs up on
+// silence well before this -- but short enough to catch a fresh call that
+// lands on a dormant row's fingerprint (same guide/architecture + identical
+// opening exchange) within the same sitting, which is the collision this
+// guards against. See module docstring for the real incident this fixes.
+const STALE_AFTER_MS = 20 * 60 * 1000;
+
 /** Reads existing state, or bootstraps a fresh row (firstSeenAt = now) if
  * this is the first turn seen for this conversation. `guide` is only used
  * on the bootstrap insert -- it's the guide baked into this agent's
@@ -59,7 +76,29 @@ export async function getOrInitConversation(
     .from(conversationState)
     .where(eq(conversationState.fingerprint, fingerprint));
   if (existing) {
-    return { firstSeenAt: existing.firstSeenAt, state: (existing.state as Record<string, unknown>) ?? {} };
+    const idleMs = Date.now() - existing.updatedAt.getTime();
+    if (idleMs < STALE_AFTER_MS) {
+      return { firstSeenAt: existing.firstSeenAt, state: (existing.state as Record<string, unknown>) ?? {} };
+    }
+    // Stale -- this row belongs to a call that's long over, not the one
+    // that just started. Reset it in place as a fresh conversation rather
+    // than resuming a dead call's clock and leftover state. Guarded on
+    // updatedAt so a concurrent in-progress turn (which just bumped it)
+    // can't be reset out from under itself.
+    const [reset] = await db
+      .update(conversationState)
+      .set({ architecture, guide, firstSeenAt: drizzleSql`now()`, state: {}, updatedAt: drizzleSql`now()` })
+      .where(
+        and(eq(conversationState.fingerprint, fingerprint), lt(conversationState.updatedAt, new Date(Date.now() - STALE_AFTER_MS)))
+      )
+      .returning();
+    if (reset) {
+      return { firstSeenAt: reset.firstSeenAt, state: {} };
+    }
+    // Lost a race -- a concurrent turn touched it between the read above
+    // and this update, so it's no longer stale. Use what it has now.
+    const [row] = await db.select().from(conversationState).where(eq(conversationState.fingerprint, fingerprint));
+    return { firstSeenAt: row.firstSeenAt, state: (row.state as Record<string, unknown>) ?? {} };
   }
   const [inserted] = await db
     .insert(conversationState)
