@@ -585,9 +585,15 @@ function strategistContextBlock(elapsedMinutes: number, prior: StrategistVerdict
   return `Current elapsed time in this interview: ${elapsedMinutes.toFixed(1)} minutes.
 
 Your previous state -- continue from here, per the Continuity section above:
+objective_id: ${prior.objectiveId ?? "not yet set"}
 track: ${prior.track ?? "not yet set"}
 closed: ${JSON.stringify(prior.closed)}
-bank: ${JSON.stringify(prior.bank)}`;
+bank: ${JSON.stringify(prior.bank)}
+
+On STAY, your output's objective_id MUST be identical to the objective_id
+above -- copy it forward verbatim, never re-derive it from what the last
+answer sounded closest to. It changes only on a MOVE (to the next objective
+in sequence) or a deliberate routing decision (e.g. at O-ROUTE).`;
 }
 
 function parseVerdict(raw: string, fallback: StrategistVerdict): StrategistVerdict {
