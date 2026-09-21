@@ -399,10 +399,13 @@ needs to anchor to something they already said.
 frame -- only for the five objectives marked FRAMED. The substance that must
 land. Otherwise null.
 
-bank -- when they say something quotable that a later objective will need to
-throw back at them, store it verbatim. Especially: their Q-ROUTE answer,
-their unprompted instinct at O-WHERE, their exact words about the referral
-relationship, and any specific patient they describe.
+bank -- verbatim quotes a LATER objective specifically needs to throw back at
+them. At most 6 entries, ever. Only these count: their O-ROUTE answer, their
+unprompted instinct at O-WHERE, their exact words about the referral
+relationship, and the one specific patient they describe at O-LAST-PT/O-HYPO
+(one bank entry per thing, not one per interesting detail they mention about
+it). Do not bank a clinical detail just because it's vivid or specific --
+only these four are ever re-thrown at them later in this guide.
 
 closed -- objective ids you consider done, including ones you're deliberately
 abandoning.
@@ -596,6 +599,23 @@ answer sounded closest to. It changes only on a MOVE (to the next objective
 in sequence) or a deliberate routing decision (e.g. at O-ROUTE).`;
 }
 
+// Matches the prompt's own stated cap ("At most 6 entries, ever") -- kept
+// as a hard code-level ceiling too rather than trusting the model to
+// self-limit. A real test call showed bank growing to 14+ free-form keys
+// over a long conversation, which pushed the strategist's own JSON output
+// past max_tokens (see runStrategistCall's completion call below) and
+// silently discarded the verdict -- see the commit this lands in for the
+// full diagnosis. Object insertion
+// order is preserved for string keys in JS, so slicing the last N entries
+// keeps the most recently (re-)banked items, which is the closest available
+// proxy for "most likely to still be needed."
+const MAX_BANK_ENTRIES = 6;
+function capBank(bank: Record<string, string>): Record<string, string> {
+  const entries = Object.entries(bank);
+  if (entries.length <= MAX_BANK_ENTRIES) return bank;
+  return Object.fromEntries(entries.slice(-MAX_BANK_ENTRIES));
+}
+
 function parseVerdict(raw: string, fallback: StrategistVerdict): StrategistVerdict {
   try {
     const cleaned = raw
@@ -619,7 +639,7 @@ function parseVerdict(raw: string, fallback: StrategistVerdict): StrategistVerdi
       tool,
       objectiveId: typeof obj.objective_id === "string" ? obj.objective_id : null,
       closed: Array.isArray(obj.closed) ? obj.closed.filter((s: unknown) => typeof s === "string") : fallback.closed,
-      bank: obj.bank && typeof obj.bank === "object" ? obj.bank : fallback.bank,
+      bank: capBank(obj.bank && typeof obj.bank === "object" ? obj.bank : fallback.bank),
       track,
     };
   } catch {
@@ -660,7 +680,12 @@ async function runStrategistCall(
   try {
     const completion = await anthropic().messages.create({
       model: FAST_MODEL,
-      max_tokens: 512,
+      // Was 512 -- too tight even after capping bank server-side: a real
+      // test call hit max_tokens on 51-57% of strategist calls once bank
+      // grew past ~12 free-form entries, silently discarding the verdict
+      // and freezing state (see capBank's comment). Doubled for real
+      // margin now that bank itself is capped at 6 entries.
+      max_tokens: 1024,
       thinking: { type: "disabled" },
       system,
       messages: transcript,
