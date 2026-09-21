@@ -654,11 +654,13 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
       targetMinutes: 1.5,
       goal:
         "Confirmed the respondent is community practice (not primarily academic/NCI-designated/COE), and have a " +
-        "concrete sense of their setting and patient mix.",
-      probes: ["What's your patient mix like?"],
+        "concrete sense of their setting and the specific cancer types they see.",
+      probes: ["What types of cancers do you primarily see?"],
       note:
         "Confirms the community-practice inclusion criterion. If setting is vague, gently confirm they're not " +
-        "primarily at an academic medical center or NCI-designated/specialized center of excellence before moving on.",
+        "primarily at an academic medical center or NCI-designated/specialized center of excellence before moving " +
+        "on. Get the cancer types by name, not just a vague 'a mix' -- their answer here is what the next " +
+        "question (rare/complex case handling) should bridge from, not a dead-end fact.",
     },
     {
       topic: "rare/complex case handling",
@@ -669,6 +671,8 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
         "refer/manage/co-manage instinct in their own words and whether it's driven by clinical judgment vs. " +
         "relationship/economics/inertia.",
       note:
+        "Bridge from the specific cancer types they just named rather than asking this as a generic, disconnected " +
+        "question -- e.g. 'given you see a lot of [X], when a rare or complex case within that mix comes along...'. " +
         "Let refer/manage/co-manage emerge in their own words rather than naming a clean either/or. If they draw " +
         "a blank, concretize with a neutral example — but do NOT seed TIH. Flag whether any 'refer' instinct is " +
         "driven by clinical appropriateness vs. relationship/economics/inertia.",
