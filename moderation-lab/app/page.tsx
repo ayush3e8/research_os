@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Conversation } from "@elevenlabs/client";
+import { TIH_STIMULUS_DOCUMENT, TIH_SCALE_1, TIH_SCALE_2 } from "@/lib/guide";
 
 type ArchitectureInfo = { name: string; kind: "native" | "custom" };
 type Persona = { id: string; name: string; generatedProfile: string; axisValues: Record<string, unknown> };
@@ -26,8 +27,22 @@ export default function Home() {
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [generatingPersona, setGeneratingPersona] = useState(false);
+  // lib/architectures/blindmod.ts's show_stimulus/show_scale_1/show_scale_2
+  // client tools -- only that architecture ever calls these, everything
+  // else leaves this state untouched. scaleResolverRef holds the promise
+  // resolver ElevenLabs' clientTools handler is blocked on until the tester
+  // taps a number, per @elevenlabs/client's ClientToolsConfig contract.
+  const [stimulusOpen, setStimulusOpen] = useState(false);
+  const [pendingScale, setPendingScale] = useState<{ prompt: string; scale: string } | null>(null);
+  const scaleResolverRef = useRef<((value: number) => void) | null>(null);
 
   const guide = guides.find((g) => g.name === selectedGuide) ?? null;
+
+  function submitScale(value: number) {
+    scaleResolverRef.current?.(value);
+    scaleResolverRef.current = null;
+    setPendingScale(null);
+  }
 
   useEffect(() => {
     fetch("/api/architectures")
@@ -77,6 +92,9 @@ export default function Home() {
     setStatus("provisioning...");
     setTranscript([]);
     setCallEnded(false);
+    setStimulusOpen(false);
+    setPendingScale(null);
+    scaleResolverRef.current = null;
 
     await fetch("/api/agents/provision", {
       method: "POST",
@@ -102,6 +120,9 @@ export default function Home() {
       onDisconnect: () => {
         setStatus("call ended");
         setCallEnded(true);
+        setStimulusOpen(false);
+        setPendingScale(null);
+        scaleResolverRef.current = null;
         // Fire-and-forget: evaluation runs automatically after every call,
         // no separate step. The UI doesn't wait on it -- check the
         // /evaluations page once it's done.
@@ -115,6 +136,22 @@ export default function Home() {
         setTranscript((prev) => [...prev, { role: message.source, text: message.message }]);
       },
       onError: (message: string) => setStatus(`error: ${message}`),
+      clientTools: {
+        show_stimulus: async () => {
+          setStimulusOpen(true);
+          return "shown";
+        },
+        show_scale_1: () =>
+          new Promise<number>((resolve) => {
+            scaleResolverRef.current = resolve;
+            setPendingScale({ prompt: TIH_SCALE_1.prompt, scale: TIH_SCALE_1.scale });
+          }),
+        show_scale_2: () =>
+          new Promise<number>((resolve) => {
+            scaleResolverRef.current = resolve;
+            setPendingScale({ prompt: TIH_SCALE_2.prompt, scale: TIH_SCALE_2.scale });
+          }),
+      },
     });
     setConversation(convo);
   }
@@ -232,6 +269,46 @@ export default function Home() {
       </div>
 
       <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>status: {status}</div>
+
+      {stimulusOpen && (
+        <div
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--accent)",
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 16,
+            fontSize: 13,
+          }}
+        >
+          <strong>Treatment profile</strong>
+          <p style={{ margin: "8px 0", whiteSpace: "pre-wrap", color: "var(--text)" }}>{TIH_STIMULUS_DOCUMENT}</p>
+          <button onClick={() => setStimulusOpen(false)}>I&apos;ve read this</button>
+        </div>
+      )}
+
+      {pendingScale && (
+        <div
+          style={{
+            background: "var(--panel)",
+            border: "1px solid var(--accent)",
+            borderRadius: 10,
+            padding: 14,
+            marginBottom: 16,
+            fontSize: 13,
+          }}
+        >
+          <p style={{ margin: "0 0 4px", color: "var(--text)" }}>{pendingScale.prompt}</p>
+          <p style={{ margin: "0 0 8px", color: "var(--muted)", fontSize: 12 }}>{pendingScale.scale}</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button key={n} onClick={() => submitScale(n)}>
+                {n}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selectedPersona && (
         <div

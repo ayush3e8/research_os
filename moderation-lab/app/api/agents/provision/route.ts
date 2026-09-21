@@ -69,7 +69,7 @@ export async function POST(req: Request) {
     agentId = await createAgent({
       name: `moderation-lab: ${name} / ${guideName}`,
       systemPrompt: "", // the custom-LLM webhook builds its own system prompt per architecture
-      firstMessage: guide.openingScript,
+      firstMessage: architecture.firstMessageOverride ?? guide.openingScript,
       voiceId: DEFAULT_VOICE_ID,
       llm: {
         kind: "custom",
@@ -82,6 +82,8 @@ export async function POST(req: Request) {
         secretId,
         modelId: "claude-sonnet-5",
       },
+      clientTools: architecture.clientTools,
+      turnTimeoutSecs: architecture.turnTimeoutSecs,
     });
   }
 

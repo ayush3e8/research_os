@@ -47,6 +47,13 @@ export type AgentLlmConfig =
   | { kind: "native"; model: string } // e.g. "claude-sonnet-5", ElevenLabs calls it directly
   | { kind: "custom"; url: string; secretId: string; modelId?: string }; // our hosted webhook
 
+export type ClientToolConfig = {
+  name: string;
+  description: string;
+  expectsResponse?: boolean;
+  parameters?: object;
+};
+
 export async function createAgent(opts: {
   name: string;
   systemPrompt: string;
@@ -54,6 +61,16 @@ export async function createAgent(opts: {
   voiceId: string;
   ttsModelId?: string;
   llm: AgentLlmConfig;
+  // "client" tools (schema per ElevenLabs docs as of this writing --
+  // https://elevenlabs.io/docs/agents-platform/customization/tools/client-tools
+  // -- verify against your account before relying on this for a real call,
+  // same as every other ElevenLabs integration point here): relayed to the
+  // custom LLM as a normal callable tool, then forwarded to the browser
+  // client's `clientTools` handler instead of executed server-side.
+  clientTools?: ClientToolConfig[];
+  // conversation_config.turn.turn_timeout, seconds -- how long ElevenLabs
+  // waits during respondent silence before treating their turn as over.
+  turnTimeoutSecs?: number;
 }): Promise<string> {
   // The End Call system tool is only added automatically to agents created
   // in the ElevenLabs dashboard -- confirmed via their docs -- agents
@@ -68,9 +85,21 @@ export async function createAgent(opts: {
     end_call: { type: "system", name: "end_call", description: "", params: { system_tool_type: "end_call" } },
   };
 
+  // Distinct from built_in_tools above -- that map only covers ElevenLabs'
+  // pre-defined system tools (end_call and the like). A genuinely custom
+  // tool (one whose call should reach the browser client, not a built-in
+  // ElevenLabs behavior) goes in this separate `tools` array instead.
+  const clientTools = (opts.clientTools ?? []).map((t) => ({
+    type: "client",
+    name: t.name,
+    description: t.description,
+    expects_response: t.expectsResponse ?? false,
+    parameters: t.parameters ?? { type: "object", properties: {} },
+  }));
+
   const prompt: Record<string, unknown> =
     opts.llm.kind === "native"
-      ? { prompt: opts.systemPrompt, llm: opts.llm.model, built_in_tools: builtInTools }
+      ? { prompt: opts.systemPrompt, llm: opts.llm.model, built_in_tools: builtInTools, tools: clientTools }
       : {
           prompt: opts.systemPrompt,
           llm: "custom-llm",
@@ -80,6 +109,7 @@ export async function createAgent(opts: {
             api_key: { secret_id: opts.llm.secretId },
           },
           built_in_tools: builtInTools,
+          tools: clientTools,
         };
 
   const res = await fetch(`${API_BASE}/v1/convai/agents/create`, {
@@ -95,6 +125,7 @@ export async function createAgent(opts: {
           language: "en",
           prompt,
         },
+        ...(opts.turnTimeoutSecs ? { turn: { turn_timeout: opts.turnTimeoutSecs } } : {}),
       },
     }),
   });

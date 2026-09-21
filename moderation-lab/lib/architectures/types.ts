@@ -43,4 +43,29 @@ export type Architecture = {
   kind: "custom" | "native";
   systemPromptForNativeAgent?: () => string; // required if kind === "native"
   run?: (req: ArchitectureRequest) => Promise<ArchitectureResult>; // required if kind === "custom"
+  /** ElevenLabs "client" tools this architecture's agent should be
+   * provisioned with, beyond the built-in end_call -- read generically by
+   * app/api/agents/provision so adding an architecture that needs one never
+   * means touching the provisioning route itself. Anthropic's tool-calling
+   * side is handled entirely by the architecture's own run() (it just sees
+   * these show up in req.tools like any other ElevenLabs-supplied tool);
+   * this is only what has to be declared on the agent so ElevenLabs relays
+   * them at all and forwards the call to the browser client. */
+  clientTools?: {
+    name: string;
+    description: string;
+    /** Whether the moderator's turn should block on a value coming back
+     * from the browser client (e.g. a tapped rating) vs. fire-and-forget
+     * (e.g. just displaying something). Defaults to false. */
+    expectsResponse?: boolean;
+    parameters?: object;
+  }[];
+  /** conversation_config.turn.turn_timeout override, in seconds -- how long
+   * ElevenLabs waits during respondent silence before treating their turn
+   * as over. Left unset means ElevenLabs' own default. */
+  turnTimeoutSecs?: number;
+  /** Overrides guide.openingScript as the agent's literal first_message.
+   * For an architecture whose moderator prompt authors its own opening
+   * rather than reading a guide-scripted line verbatim. */
+  firstMessageOverride?: string;
 };

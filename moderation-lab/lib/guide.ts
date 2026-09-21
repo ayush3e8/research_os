@@ -1038,6 +1038,29 @@ export const ONCOLOGY_TIH_GUIDE: Guide = {
   ],
 };
 
+/** Content for lib/architectures/blindmod.ts's show_stimulus/show_scale_1/
+ * show_scale_2 client tools -- pulled from ONCOLOGY_TIH_GUIDE's own
+ * questions rather than duplicated, so the fictional-placeholder content
+ * (see that guide's module docstring) only ever lives in one place. Thrown
+ * if the guide's shape ever changes underneath these on purpose -- a silent
+ * `undefined` shown to a real respondent would be worse than a build-time
+ * crash surfacing it immediately. */
+function findQuestion(topic: string) {
+  const q = ONCOLOGY_TIH_GUIDE.questions.find((question) => question.topic === topic);
+  if (!q) throw new Error(`ONCOLOGY_TIH_GUIDE is missing its "${topic}" question`);
+  return q;
+}
+
+export const TIH_STIMULUS_DOCUMENT = findQuestion("stimulus: treatment profile").ask;
+
+const adminQuestion = findQuestion("administration/monitoring feel (rating + why)");
+if (!adminQuestion.rating) throw new Error('"administration/monitoring feel (rating + why)" is missing its rating field');
+export const TIH_SCALE_1 = adminQuestion.rating;
+
+const likelihoodQuestion = findQuestion("likelihood to self-manage (rating + why)");
+if (!likelihoodQuestion.rating) throw new Error('"likelihood to self-manage (rating + why)" is missing its rating field');
+export const TIH_SCALE_2 = likelihoodQuestion.rating;
+
 /** Every guide the app can run, keyed by the name used in the manual-test
  * UI, the ElevenLabs agent's baked-in webhook URL, and conversation_state's
  * stored `guide` column. */

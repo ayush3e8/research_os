@@ -3,6 +3,7 @@ import { strategistArchitecture } from "./strategist";
 import { fanoutArchitecture } from "./fanout";
 import { livefanoutArchitecture } from "./livefanout";
 import { reviewerArchitecture } from "./reviewer";
+import { blindmodArchitecture } from "./blindmod";
 import type { Architecture } from "./types";
 
 /**
@@ -16,6 +17,7 @@ export const ARCHITECTURES: Record<string, Architecture> = {
   fanout: fanoutArchitecture,
   livefanout: livefanoutArchitecture,
   reviewer: reviewerArchitecture,
+  blindmod: blindmodArchitecture,
 };
 
 export function getArchitecture(name: string): Architecture | undefined {
