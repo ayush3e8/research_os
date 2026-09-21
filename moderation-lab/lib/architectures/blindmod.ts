@@ -176,9 +176,17 @@ type StrategistVerdict = {
   track: "A" | "B" | null;
 };
 
+// Used only for the moderator's very first LLM turn -- the strategist has no
+// transcript to react to yet (it only ever runs *after* a moderator reply,
+// via after()), so this can't be left as a contentless "nothing new, stay
+// where you are": with nothing to stay ON, a real test call showed the
+// moderator improvising a question with no relation to O-SETUP at all
+// ("what's going through your mind when a patient first walks in?"). Seeded
+// with a real anchor instead -- the moderator still asks it in its own
+// voice, but now has somewhere to start.
 const DEFAULT_VERDICT: StrategistVerdict = {
   verdict: "STAY",
-  directive: null,
+  directive: "You want to know about their practice -- what kind of setting they work in and what they mainly see day to day.",
   forbid: NON_SEEDING_TERMS,
   callback: null,
   frame: null,
