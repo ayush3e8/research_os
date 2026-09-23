@@ -49,16 +49,21 @@ export type SystemOneResponse = {
 
 export async function systemOne(opts: {
   state: string;
-  model?: string; // defaults to "jev-latest" server-side if omitted
+  model?: string;
   questions: Record<string, TypeSafeQuestion>;
 }): Promise<SystemOneResponse> {
+  // Docs say `model` is optional server-side ("defaults to jev-latest") --
+  // a real request against the live API 422'd with "Field required" when
+  // omitted. Docs and reality disagreed; reality wins, so this is always
+  // sent explicitly now rather than left out when undefined.
+  const model = opts.model ?? "jev-latest";
   const res = await fetch(`${API_BASE}/v1/systemone`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${process.env.TYPESAFE_API_KEY!}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ state: opts.state, model: opts.model, questions: opts.questions }),
+    body: JSON.stringify({ state: opts.state, model, questions: opts.questions }),
   });
   if (!res.ok) {
     throw new Error(`TypeSafe system_one failed (${res.status}): ${await res.text()}`);
