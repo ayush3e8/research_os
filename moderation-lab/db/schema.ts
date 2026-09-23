@@ -130,6 +130,11 @@ export const simulationRuns = pgTable("simulation_runs", {
   status: text("status").notNull().default("pending"), // "pending" | "running" | "done" | "failed"
   turnCount: integer("turn_count").notNull().default(0),
   endReason: text("end_reason"), // "end_call" | "max_turns" | "error" -- null while still running
+  // The running Anthropic.MessageParam[] transcript -- authoritative state
+  // the step driver reads and appends to each call. A real call gets this
+  // resent by ElevenLabs every turn; nothing plays that role here, so this
+  // run owns it directly instead of re-deriving it from turn_logs.
+  transcript: jsonb("transcript").notNull().default([]),
   startedAt: timestamp("started_at", { withTimezone: true }),
   endedAt: timestamp("ended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
