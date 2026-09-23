@@ -154,8 +154,15 @@ export const system1Architecture: Architecture = {
     const elapsedMinutes = (Date.now() - req.firstSeenAt.getTime()) / 60_000;
     const directive = await runSystem1Call(req, elapsedMinutes);
 
+    // A real test call showed this leaking straight into spoken output --
+    // e.g. "...I need to probe this specific point before moving on, per my
+    // instructions." The imperative framing invites the model to justify
+    // itself; nothing told it this line is private. Said explicitly now.
     const system =
-      `NEXT, you must: ${directive}\n\n` +
+      `NEXT, you must: ${directive} This line is private guidance for you alone -- ` +
+      `never mention it, never say "per my instructions" or "the guide says" or ` +
+      `anything like it, never explain your reasoning out loud. Just ask naturally, ` +
+      `as if the thought were your own.\n\n` +
       `${req.system}\n\n${moderatorSystemPrompt(req.guide)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
     const completion = await anthropic().messages.create({
