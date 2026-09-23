@@ -196,6 +196,22 @@ export default function SimulationsPage() {
       </p>
 
       <section style={panelStyle}>
+        <h2 style={h2Style}>Guide</h2>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 0 }}>
+          Pick this first -- generated personas below are tailored to whichever guide is selected here (defaults to
+          "everyday" on load, which is why a freshly-loaded page can generate an unrelated persona if you don't
+          change it first).
+        </p>
+        <select value={selectedGuide} onChange={(e) => setSelectedGuide(e.target.value)}>
+          {guides.map((g) => (
+            <option key={g.name} value={g.name}>
+              {g.name} ({g.targetDurationMinutes} min)
+            </option>
+          ))}
+        </select>
+      </section>
+
+      <section style={panelStyle}>
         <h2 style={h2Style}>Personas</h2>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 12 }}>
           {personas.map((p) => (
@@ -227,9 +243,10 @@ export default function SimulationsPage() {
         </div>
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 10 }}>
-          <button onClick={generatePersona} disabled={generatingPersona}>
+          <button onClick={generatePersona} disabled={generatingPersona || !selectedGuide}>
             {generatingPersona ? "generating..." : "+ generate persona (default axes)"}
           </button>
+          <span style={{ fontSize: 12, color: "var(--muted)" }}>for guide: {selectedGuide || "(none selected)"}</span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -255,17 +272,7 @@ export default function SimulationsPage() {
 
       <section style={panelStyle}>
         <h2 style={h2Style}>Batch configuration</h2>
-
-        <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 13, marginBottom: 10 }}>
-          Guide
-          <select value={selectedGuide} onChange={(e) => setSelectedGuide(e.target.value)}>
-            {guides.map((g) => (
-              <option key={g.name} value={g.name}>
-                {g.name} ({g.targetDurationMinutes} min)
-              </option>
-            ))}
-          </select>
-        </label>
+        <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 0 }}>Guide: {selectedGuide || "(none selected above)"}</p>
 
         <div style={{ marginBottom: 10 }}>
           <div style={{ fontSize: 13, marginBottom: 4 }}>Architectures (custom-LLM only -- native architectures have no run() to simulate)</div>
