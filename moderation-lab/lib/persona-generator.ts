@@ -8,6 +8,7 @@
  */
 import type Anthropic from "@anthropic-ai/sdk";
 import { anthropic, MODEL } from "@/lib/anthropic";
+import type { Guide } from "@/lib/guide";
 
 export type PersonaAxes = {
   chatty: number; // 0 = terse, 1 = rambling
@@ -48,7 +49,7 @@ function axisInstructions(axes: PersonaAxes): string {
   return lines.join(" ");
 }
 
-export async function generateBaseProfile(axes: PersonaAxes): Promise<string> {
+export async function generateBaseProfile(axes: PersonaAxes, guide: Guide): Promise<string> {
   const response = await anthropic().messages.create({
     model: MODEL,
     max_tokens: 600,
@@ -61,9 +62,12 @@ export async function generateBaseProfile(axes: PersonaAxes): Promise<string> {
       {
         role: "user",
         content:
-          `Generate a bio for a synthetic respondent in a biopharma market-research interview. ` +
-          `Background-match to an ideal screener profile: ${axes.backgroundMatch.toFixed(2)} (0 = barely ` +
-          `qualifies, 1 = ideal match). Make the specific role/seniority/company-type consistent with that score.`,
+          `Generate a bio for a synthetic respondent for this specific study: "${guide.studyTopic}" -- ` +
+          `here's how the study is framed to the respondent: "${guide.statedPurpose}". Infer the respondent's ` +
+          `actual role/profession from that (e.g. a study about how community oncologists handle referrals ` +
+          `needs a community oncologist, not a market-research professional) and write a bio consistent with ` +
+          `it. Background-match to an ideal screener profile: ${axes.backgroundMatch.toFixed(2)} (0 = barely ` +
+          `qualifies, 1 = ideal match). Make the specific seniority/setting/experience consistent with that score.`,
       },
     ],
   });

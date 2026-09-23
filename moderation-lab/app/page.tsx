@@ -75,7 +75,7 @@ export default function Home() {
       const res = await fetch("/api/personas/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: `persona-${Date.now()}` }),
+        body: JSON.stringify({ name: `persona-${Date.now()}`, guide: selectedGuide }),
       });
       const data = await res.json();
       if (data.persona) {
