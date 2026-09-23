@@ -56,6 +56,13 @@ export const conversationState = pgTable("conversation_state", {
   // Untyped on purpose -- see module docstring.
   state: jsonb("state").notNull().default({}),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  // True for a conversation driven by lib/simulation (an LLM-played
+  // respondent, no ElevenLabs/voice involved at all) rather than a real
+  // call. The turn-logging/state/evaluation plumbing is fully shared
+  // between the two on purpose (see simulationRuns' docstring) -- this is
+  // the one flag that keeps synthetic test data out of real-call reporting
+  // without needing a second copy of any of that plumbing.
+  isSimulation: boolean("is_simulation").notNull().default(false),
 });
 
 export const personas = pgTable("personas", {
@@ -74,6 +81,57 @@ export const personas = pgTable("personas", {
   systemPrompt: text("system_prompt").notNull(),
   elevenlabsVoiceId: text("elevenlabs_voice_id"),
   elevenlabsAgentId: text("elevenlabs_agent_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+// A configured, launchable set of text-only simulated interviews --
+// lib/simulation/* runs each architecture in `architectures` against each
+// persona in `personaIds`, `repeatsPerCombo` times, producing one
+// simulationRuns row per (architecture, persona, repeat). Not a live call
+// at all: no ElevenLabs, no audio -- an LLM plays the respondent using the
+// persona's prompt, and the architecture under test runs through the exact
+// same runArchitectureTurn() the real webhook uses (see that function's
+// docstring), so a simulated interview is identical to a real one except
+// for the spoken components. Timing/pacing fidelity is deliberately out of
+// scope for now -- elapsed time during a run is real wall-clock (which
+// runs far faster than a real call would take to speak aloud); a
+// retroactive words-per-minute + latency estimate is the intended way to
+// reconstruct "how long would this actually have taken," not a live fake
+// clock fed into generation.
+export const simulationBatches = pgTable("simulation_batches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  guide: text("guide").notNull(),
+  architectures: jsonb("architectures").notNull(), // string[]
+  personaIds: jsonb("persona_ids").notNull(), // uuid[] (as strings)
+  repeatsPerCombo: integer("repeats_per_combo").notNull().default(1),
+  // Hard safety cap, turn count not simulated minutes (see module
+  // docstring) -- end_call gating has broken silently more than once in
+  // real testing (see lib/architectures/blindmod.ts's WRAP history), and
+  // an ungated batch run burns real API spend across every combination in
+  // the batch, not just one call, if an architecture never signals done.
+  maxTurns: integer("max_turns").notNull().default(60),
+  status: text("status").notNull().default("pending"), // "pending" | "running" | "done" | "failed"
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const simulationRuns = pgTable("simulation_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  batchId: uuid("batch_id").notNull(),
+  architecture: text("architecture").notNull(),
+  guide: text("guide").notNull(),
+  personaId: uuid("persona_id").notNull(),
+  repeatIndex: integer("repeat_index").notNull(),
+  // The conversationState/turnLogs/evaluations key this run writes under --
+  // synthetic (no real ElevenLabs conversation behind it), but otherwise
+  // used exactly like a real one so the existing evaluation pipeline and
+  // /evaluations UI work on simulation data with no changes.
+  conversationFingerprint: text("conversation_fingerprint").notNull().unique(),
+  status: text("status").notNull().default("pending"), // "pending" | "running" | "done" | "failed"
+  turnCount: integer("turn_count").notNull().default(0),
+  endReason: text("end_reason"), // "end_call" | "max_turns" | "error" -- null while still running
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
