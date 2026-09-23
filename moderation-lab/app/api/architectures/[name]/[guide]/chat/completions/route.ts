@@ -15,13 +15,13 @@
  * `run()`.
  */
 import { getArchitecture } from "@/lib/architectures/registry";
-import { computeConversationFingerprint, getOrInitConversation, updateConversationState } from "@/lib/conversation-state";
+import { computeConversationFingerprint } from "@/lib/conversation-state";
 import { logCallHealthEvent } from "@/lib/call-health";
-import { logTurn } from "@/lib/logging";
 import { getGuide } from "@/lib/guide";
 import { MODEL } from "@/lib/anthropic";
 import { singleChunkSseResponse, toAnthropicMessages, toAnthropicTools } from "@/lib/openai-translate";
 import { claimTurn, computeTurnFingerprint, recordTurnResult, waitForTurnResult } from "@/lib/turn-dedup";
+import { runArchitectureTurn } from "@/lib/turn-runner";
 import type { OpenAIMessage, OpenAITool } from "@/lib/openai-translate";
 
 // Architectures that schedule background work via next/server's after()
@@ -78,7 +78,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
     return new Response(`Unknown guide: ${guideName}`, { status: 404 });
   }
 
-  const requestStartedAt = Date.now();
   const body = await req.json();
   const { system, messages } = toAnthropicMessages((body.messages ?? []) as OpenAIMessage[]);
   const tools = toAnthropicTools(body.tools as OpenAITool[] | undefined);
@@ -102,71 +101,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ name: s
     // rather than leaving the respondent's turn unanswered.
   }
 
-  const conversation = await getOrInitConversation(conversationFingerprint, name, guideName);
+  // Delegates the actual run+persist+log sequence to lib/turn-runner.ts,
+  // shared with lib/simulation's text-only driver -- see that module's
+  // docstring for why. This route still owns everything about receiving a
+  // turn from ElevenLabs specifically: the dedup claim above, the wire
+  // translation already done, and recording the result for dedup below.
+  const result = await runArchitectureTurn({
+    architectureName: name,
+    guideName,
+    conversationFingerprint,
+    system,
+    messages,
+    tools,
+    rawRequestBody: body,
+  });
 
-  try {
-    const result = await architecture.run({
-      fingerprint: conversationFingerprint,
-      system,
-      messages,
-      tools,
-      firstSeenAt: conversation.firstSeenAt,
-      state: conversation.state,
-      guide,
-    });
+  await recordTurnResult(turnFingerprint, {
+    responseText: result.responseText,
+    responseToolCalls: result.responseToolCalls,
+    stopReason: result.stopReason,
+  });
 
-    await updateConversationState(conversationFingerprint, result.nextState);
-    await recordTurnResult(turnFingerprint, {
-      responseText: result.responseText,
-      responseToolCalls: result.responseToolCalls,
-      stopReason: result.stopReason,
-    });
-    await logTurn({
-      architecture: name,
-      conversationFingerprint,
-      model: MODEL,
-      requestSystem: system,
-      requestMessages: messages,
-      requestTools: tools,
-      rawRequestBody: body,
-      responseText: result.responseText,
-      responseToolCalls: result.responseToolCalls,
-      stopReason: result.stopReason,
-      latencyMs: Date.now() - requestStartedAt,
-    });
-
-    return singleChunkSseResponse(id, MODEL, result.responseText, result.responseToolCalls);
-  } catch (err) {
-    console.error(`architecture "${name}" run() failed:`, err);
-    const fallbackText = "Sorry, could you say that again?";
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    await recordTurnResult(turnFingerprint, { responseText: fallbackText, responseToolCalls: [], stopReason: "error" });
-    // Previously unlogged entirely -- a fallback turn left no trace in
-    // turn_logs, so the fallback rate wasn't even measurable. Both the full
-    // turn log (for the transcript/latency record) and a call-health event
-    // (for the aggregate rate) are written now.
-    await logTurn({
-      architecture: name,
-      callType: "moderator",
-      conversationFingerprint,
-      model: MODEL,
-      requestSystem: system,
-      requestMessages: messages,
-      requestTools: tools,
-      rawRequestBody: body,
-      responseText: fallbackText,
-      responseToolCalls: [],
-      stopReason: "error",
-      latencyMs: Date.now() - requestStartedAt,
-    });
-    await logCallHealthEvent({
-      eventType: "fallback",
-      conversationFingerprint,
-      architecture: name,
-      detail: { error: errorMessage },
-    });
-    return singleChunkSseResponse(id, MODEL, fallbackText, []);
-  }
+  return singleChunkSseResponse(id, MODEL, result.responseText, result.responseToolCalls);
 }
 
 // So a health-check GET doesn't 405 confusingly during setup.

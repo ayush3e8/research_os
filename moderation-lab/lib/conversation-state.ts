@@ -65,18 +65,30 @@ const STALE_AFTER_MS = 20 * 60 * 1000;
  * on the bootstrap insert -- it's the guide baked into this agent's
  * webhook URL (see the [guide] route segment), stored once so later
  * evaluation of this conversation knows which guide it was actually
- * run against, per lib/guide.ts's module docstring. */
+ * run against, per lib/guide.ts's module docstring. `isSimulation` is also
+ * bootstrap-only, for lib/turn-runner.ts's simulation callers (see
+ * simulationRuns' docstring in db/schema.ts). */
 export async function getOrInitConversation(
   fingerprint: string,
   architecture: string,
-  guide: string
+  guide: string,
+  isSimulation = false
 ): Promise<ConversationRow> {
   const [existing] = await db
     .select()
     .from(conversationState)
     .where(eq(conversationState.fingerprint, fingerprint));
   if (existing) {
-    const idleMs = Date.now() - existing.updatedAt.getTime();
+    // Staleness protection exists for the real problem this module's
+    // docstring describes: a content-derived fingerprint colliding across
+    // two genuinely different real calls. A simulation's fingerprint is a
+    // fresh random id (simulationRuns.conversationFingerprint) that can
+    // never collide with anything -- applying the same 20-minute reset
+    // here would just silently wipe a simulation's state if its step loop
+    // (a browser tab, see lib/simulation's docstring) happens to pause for
+    // a while, which is a real risk for something driven by repeated
+    // client-side fetches rather than a live phone call.
+    const idleMs = existing.isSimulation ? 0 : Date.now() - existing.updatedAt.getTime();
     if (idleMs < STALE_AFTER_MS) {
       return { firstSeenAt: existing.firstSeenAt, state: (existing.state as Record<string, unknown>) ?? {} };
     }
@@ -102,7 +114,7 @@ export async function getOrInitConversation(
   }
   const [inserted] = await db
     .insert(conversationState)
-    .values({ fingerprint, architecture, guide, state: {} })
+    .values({ fingerprint, architecture, guide, state: {}, isSimulation })
     .onConflictDoNothing()
     .returning();
   if (inserted) {
