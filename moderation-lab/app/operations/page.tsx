@@ -157,12 +157,16 @@ export default function OperationsPage() {
                     {c.reachedEndCall ? "ended cleanly" : "never reached end_call"}
                   </span>
                 </div>
-                <button
-                  onClick={() => setExpanded(expanded === c.conversationFingerprint ? null : c.conversationFingerprint)}
-                  style={{ marginTop: 8, fontSize: 11 }}
-                >
-                  {expanded === c.conversationFingerprint ? "hide latency" : "see latency →"}
-                </button>
+                <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                  <button onClick={() => setExpanded(expanded === c.conversationFingerprint ? null : c.conversationFingerprint)} style={{ fontSize: 11 }}>
+                    {expanded === c.conversationFingerprint ? "hide latency" : "see latency →"}
+                  </button>
+                  {c.conversationFingerprint.startsWith("sim_") && (
+                    <a href={`/simulations/runs/${c.conversationFingerprint}`} style={{ fontSize: 11, color: "var(--accent)" }}>
+                      view transcript →
+                    </a>
+                  )}
+                </div>
                 {expanded === c.conversationFingerprint && <LatencyDetail fingerprint={c.conversationFingerprint} />}
               </div>
             ))}
