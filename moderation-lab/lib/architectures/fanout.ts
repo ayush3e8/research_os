@@ -23,6 +23,7 @@ import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { updateConversationState } from "@/lib/conversation-state";
 import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
+import { callModeratorLLM } from "@/lib/moderator-call";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
 
 const DEFAULT_GUIDANCE =
@@ -213,7 +214,7 @@ export const fanoutArchitecture: Architecture = {
         : DEFAULT_GUIDANCE;
     const system = `${req.system}\n\n${moderatorSystemPrompt(req.guide, guidance)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
-    const completion = await anthropic().messages.create({
+    const { responseText, responseToolCalls, stopReason } = await callModeratorLLM("fanout", req.fingerprint, {
       model: MODEL,
       max_tokens: 1024,
       thinking: { type: "disabled" },
@@ -222,14 +223,6 @@ export const fanoutArchitecture: Architecture = {
       tools: req.tools.length ? req.tools : undefined,
     });
 
-    const responseText = completion.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    const responseToolCalls = completion.content
-      .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-      .map((b) => ({ id: b.id, name: b.name, input: b.input }));
-
     // Scheduled for after the response is sent -- never awaited on the
     // respondent's turn. See module docstring.
     after(() => runFanoutReasoning(req, responseText));
@@ -237,7 +230,7 @@ export const fanoutArchitecture: Architecture = {
     return {
       responseText,
       responseToolCalls,
-      stopReason: completion.stop_reason,
+      stopReason,
       nextState: req.state, // unchanged here -- runFanoutReasoning above writes the real update itself, later
     };
   },

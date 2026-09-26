@@ -27,6 +27,7 @@ import { pacingNote } from "@/lib/pacing";
 import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
+import { callModeratorLLM } from "@/lib/moderator-call";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
 
 function messageText(message: AnthropicMessage | undefined): string {
@@ -133,22 +134,18 @@ export const reviewerArchitecture: Architecture = {
     const elapsedMinutes = (Date.now() - req.firstSeenAt.getTime()) / 60_000;
     const system = `${req.system}\n\n${moderatorSystemPrompt(req.guide)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
-    const completion = await anthropic().messages.create({
-      model: MODEL,
-      max_tokens: 1024,
-      thinking: { type: "disabled" },
-      system,
-      messages: req.messages,
-      tools: req.tools.length ? req.tools : undefined,
-    });
-
-    const draftText = completion.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    const responseToolCalls = completion.content
-      .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-      .map((b) => ({ id: b.id, name: b.name, input: b.input }));
+    const { responseText: draftText, responseToolCalls, stopReason } = await callModeratorLLM(
+      "reviewer",
+      req.fingerprint,
+      {
+        model: MODEL,
+        max_tokens: 1024,
+        thinking: { type: "disabled" },
+        system,
+        messages: req.messages,
+        tools: req.tools.length ? req.tools : undefined,
+      }
+    );
 
     // Nothing to review if the draft is pure tool use (e.g. closing the
     // call) with no spoken text.
@@ -157,7 +154,7 @@ export const reviewerArchitecture: Architecture = {
     return {
       responseText,
       responseToolCalls,
-      stopReason: completion.stop_reason,
+      stopReason,
       nextState: req.state, // nothing to carry forward -- review is a per-turn, stateless edit pass
     };
   },

@@ -26,7 +26,11 @@ export async function logCallHealthEvent(input: {
     // above so a hang or failure here isn't misread as the same class of
     // problem (an after() callback never firing) those exist to diagnose.
     | "live_reasoning_started"
-    | "live_reasoning_failed";
+    | "live_reasoning_failed"
+    // lib/moderator-call.ts's callModeratorLLM: both the original call and
+    // one retry came back with no text and no tool_use at all, so the
+    // canned fallback line is what actually got returned.
+    | "empty_completion_fallback";
   conversationFingerprint: string | null;
   architecture: string;
   detail?: Record<string, unknown>;

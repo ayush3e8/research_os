@@ -38,6 +38,7 @@ import { pacingNote } from "@/lib/pacing";
 import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
+import { callModeratorLLM } from "@/lib/moderator-call";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
 
 function messageText(message: AnthropicMessage | undefined): string {
@@ -223,7 +224,7 @@ export const livefanoutArchitecture: Architecture = {
     const notes = await runAdvisors(req);
     const system = `${req.system}\n\n${moderatorSystemPrompt(req.guide, notes)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
-    const completion = await anthropic().messages.create({
+    const { responseText, responseToolCalls, stopReason } = await callModeratorLLM("livefanout", req.fingerprint, {
       model: MODEL,
       max_tokens: 1024,
       thinking: { type: "disabled" },
@@ -232,18 +233,10 @@ export const livefanoutArchitecture: Architecture = {
       tools: req.tools.length ? req.tools : undefined,
     });
 
-    const responseText = completion.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    const responseToolCalls = completion.content
-      .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-      .map((b) => ({ id: b.id, name: b.name, input: b.input }));
-
     return {
       responseText,
       responseToolCalls,
-      stopReason: completion.stop_reason,
+      stopReason,
       nextState: req.state, // nothing to carry forward -- every turn reasons fresh from the live transcript
     };
   },

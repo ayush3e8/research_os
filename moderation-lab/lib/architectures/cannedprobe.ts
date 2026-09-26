@@ -34,12 +34,12 @@
  * being wrong has to bias toward the expensive-but-safe path, not the
  * cheap one.
  */
-import type Anthropic from "@anthropic-ai/sdk";
-import { anthropic, MODEL } from "@/lib/anthropic";
+import { MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
 import { formatGuideForPrompt, type Guide } from "@/lib/guide";
 import { logTurn } from "@/lib/logging";
 import { systemOne } from "@/lib/typesafe";
+import { callModeratorLLM } from "@/lib/moderator-call";
 import type { Architecture, ArchitectureRequest, ArchitectureResult } from "./types";
 import {
   PROBE_CATEGORIES,
@@ -139,10 +139,13 @@ async function classify(req: ArchitectureRequest, elapsedMinutes: number, lastCa
           generic_probe:
             "The respondent's last answer leaves something worth deepening or clarifying, and a generic, " +
             "content-free follow-up (e.g. 'say more about that', 'what makes you say that') would work " +
-            "naturally without needing to reference specifics of what they said.",
+            "naturally -- even if their answer contained a minor detail, as long as the follow-up ITSELF " +
+            "doesn't need to name or reference that detail to make sense. Real qualitative answers almost " +
+            "always contain some specific fact; that alone does not disqualify this option.",
           specific_probe:
-            "The respondent's last answer leaves something worth probing, but doing so well requires " +
-            "referencing a specific detail, phrase, or fact they just gave -- a generic probe would feel disconnected.",
+            "The follow-up ONLY works if it explicitly names or quotes back a specific detail, phrase, or " +
+            "fact they just gave -- a generic, content-free line would clearly feel disconnected or confuse " +
+            "them about what's being asked, not just feel slightly less tailored.",
           move_on: "The current guide question already has a real, substantive answer -- time to move to the next one.",
           wrap_up: "The guide is substantially covered and/or time is up -- time to deliver the closing and end the call.",
         },
@@ -179,7 +182,7 @@ async function callModerator(req: ArchitectureRequest, directive: string, elapse
     `as if the thought were your own.\n\n` +
     `${req.system}\n\n${moderatorSystemPrompt(req.guide)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
-  const completion = await anthropic().messages.create({
+  const { responseText, responseToolCalls, stopReason } = await callModeratorLLM("cannedprobe", req.fingerprint, {
     model: MODEL,
     max_tokens: 1024,
     thinking: { type: "disabled" },
@@ -188,18 +191,10 @@ async function callModerator(req: ArchitectureRequest, directive: string, elapse
     tools: req.tools.length ? req.tools : undefined,
   });
 
-  const responseText = completion.content
-    .filter((b): b is Anthropic.TextBlock => b.type === "text")
-    .map((b) => b.text)
-    .join("");
-  const responseToolCalls = completion.content
-    .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-    .map((b) => ({ id: b.id, name: b.name, input: b.input }));
-
   return {
     responseText,
     responseToolCalls,
-    stopReason: completion.stop_reason,
+    stopReason,
     nextState: req.state, // bank state untouched -- no bank line was used this turn
   };
 }

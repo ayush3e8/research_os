@@ -12,10 +12,10 @@
  * streaming (better perceived latency) is a reasonable follow-up once this
  * is confirmed working end to end.
  */
-import type Anthropic from "@anthropic-ai/sdk";
-import { anthropic, MODEL } from "@/lib/anthropic";
+import { MODEL } from "@/lib/anthropic";
 import { pacingNote } from "@/lib/pacing";
 import { formatGuideForPrompt, type Guide } from "@/lib/guide";
+import { callModeratorLLM } from "@/lib/moderator-call";
 import type { Architecture, ArchitectureResult } from "./types";
 
 function systemPrompt(guide: Guide): string {
@@ -41,7 +41,7 @@ export const baselineArchitecture: Architecture = {
     const elapsedMinutes = (Date.now() - req.firstSeenAt.getTime()) / 60_000;
     const system = `${req.system}\n\n${systemPrompt(req.guide)}\n\n${pacingNote(elapsedMinutes, req.guide.targetDurationMinutes)}`;
 
-    const completion = await anthropic().messages.create({
+    const { responseText, responseToolCalls, stopReason } = await callModeratorLLM("baseline", req.fingerprint, {
       model: MODEL,
       max_tokens: 1024,
       thinking: { type: "disabled" },
@@ -50,18 +50,10 @@ export const baselineArchitecture: Architecture = {
       tools: req.tools.length ? req.tools : undefined,
     });
 
-    const responseText = completion.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    const responseToolCalls = completion.content
-      .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-      .map((b) => ({ id: b.id, name: b.name, input: b.input }));
-
     return {
       responseText,
       responseToolCalls,
-      stopReason: completion.stop_reason,
+      stopReason,
       nextState: req.state, // nothing to carry forward for this architecture
     };
   },

@@ -30,6 +30,7 @@ import { anthropic, FAST_MODEL, MODEL } from "@/lib/anthropic";
 import { updateConversationState } from "@/lib/conversation-state";
 import { logCallHealthEvent } from "@/lib/call-health";
 import { logTurn } from "@/lib/logging";
+import { callModeratorLLM } from "@/lib/moderator-call";
 import type { Architecture, ArchitectureRequest, ArchitectureResult, AnthropicMessage } from "./types";
 
 const ARCHITECTURE_NAME = "blindmod";
@@ -768,7 +769,7 @@ export const blindmodArchitecture: Architecture = {
     const system = `${req.system}\n\n${MODERATOR_SYSTEM_PROMPT}\n\n${buildDirectiveLine(verdict)}`;
     const tools = gateTools(req.tools, verdict, wrapped);
 
-    const completion = await anthropic().messages.create({
+    const { responseText, responseToolCalls, stopReason } = await callModeratorLLM("blindmod", req.fingerprint, {
       model: MODEL,
       max_tokens: 1024,
       thinking: { type: "disabled" },
@@ -777,14 +778,6 @@ export const blindmodArchitecture: Architecture = {
       tools: tools.length ? tools : undefined,
     });
 
-    const responseText = completion.content
-      .filter((b): b is Anthropic.TextBlock => b.type === "text")
-      .map((b) => b.text)
-      .join("");
-    const responseToolCalls = completion.content
-      .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-      .map((b) => ({ id: b.id, name: b.name, input: b.input }));
-
     // Scheduled for after the response is sent -- never awaited on the
     // respondent's turn. See module docstring.
     after(() => runStrategistCall(req, responseText, verdict, wrapped));
@@ -792,7 +785,7 @@ export const blindmodArchitecture: Architecture = {
     return {
       responseText,
       responseToolCalls,
-      stopReason: completion.stop_reason,
+      stopReason,
       // `wrapped` is the one piece of state this turn needs to write
       // synchronously (so end_call is available starting this exact turn,
       // not one turn later) -- everything else (the next verdict) is only
