@@ -49,11 +49,19 @@ import {
   type ProbeBankState,
 } from "./probe-bank";
 
-// Below this, a generic_probe/category classification is treated as not
-// confident enough to trust the bank -- see module docstring's safety-
-// margin reasoning. Same value for both questions; nothing yet suggests
-// they need to differ.
-const CONFIDENCE_THRESHOLD = 0.65;
+// Below this, `situation` isn't confident enough to trust generic_probe --
+// see module docstring's safety-margin reasoning.
+const SITUATION_CONFIDENCE_THRESHOLD = 0.65;
+
+// `category` picks among 7 options (vs. situation's 4), which structurally
+// spreads probability mass thinner even on a clear-cut case -- confirmed
+// directly against jev: a hand-written, deliberately unambiguous
+// generic-probe state ("yeah, I dont know, whatever.") scored category
+// confidence 0.62, which the old shared 0.65 threshold would have rejected
+// despite situation itself being 0.84 confident. Lower and separate from
+// situation's threshold rather than assuming the two compare on the same
+// scale.
+const CATEGORY_CONFIDENCE_THRESHOLD = 0.5;
 
 // Identical to system1.ts's moderatorSystemPrompt (itself baseline's own
 // full guide-visible prompt) -- duplicated rather than imported, matching
@@ -134,18 +142,24 @@ async function classify(req: ArchitectureRequest, elapsedMinutes: number, lastCa
     questions: {
       situation: {
         type: "choice",
-        instructions: "What should happen on the moderator's very next turn.",
+        instructions:
+          "What should happen on the moderator's very next turn. Bias toward probing: a generic follow-up " +
+          "is the default whenever it would plausibly work at all, since more probing (rather than moving " +
+          "on early, or reaching for something narrowly specific) is what actually surfaces real insight in " +
+          "a qualitative interview. Only move away from generic_probe when the criteria below clearly call for it.",
         criteria: {
           generic_probe:
-            "The respondent's last answer leaves something worth deepening or clarifying, and a generic, " +
-            "content-free follow-up (e.g. 'say more about that', 'what makes you say that') would work " +
-            "naturally -- even if their answer contained a minor detail, as long as the follow-up ITSELF " +
-            "doesn't need to name or reference that detail to make sense. Real qualitative answers almost " +
-            "always contain some specific fact; that alone does not disqualify this option.",
+            "DEFAULT CHOICE. The respondent's last answer leaves something worth deepening or clarifying, " +
+            "and a generic, content-free follow-up (e.g. 'say more about that', 'what makes you say that') " +
+            "would work naturally -- even if their answer contained a minor detail, as long as the follow-up " +
+            "ITSELF doesn't need to name or reference that detail to make sense. Real qualitative answers " +
+            "almost always contain some specific fact; that alone does not disqualify this option. When " +
+            "genuinely torn between this and specific_probe, pick this one.",
           specific_probe:
-            "The follow-up ONLY works if it explicitly names or quotes back a specific detail, phrase, or " +
-            "fact they just gave -- a generic, content-free line would clearly feel disconnected or confuse " +
-            "them about what's being asked, not just feel slightly less tailored.",
+            "Only when a generic line would CLEARLY be confusing or obviously disconnected from what was " +
+            "just said -- not merely \"a more tailored question would be nicer.\" The follow-up must strictly " +
+            "require naming or quoting back a specific detail, phrase, or fact they just gave for it to make " +
+            "sense at all.",
           move_on: "The current guide question already has a real, substantive answer -- time to move to the next one.",
           wrap_up: "The guide is substantially covered and/or time is up -- time to deliver the closing and end the call.",
         },
@@ -220,10 +234,10 @@ export const cannedProbeArchitecture: Architecture = {
 
     const canUseBank =
       decision.situation === "generic_probe" &&
-      decision.situationConfidence >= CONFIDENCE_THRESHOLD &&
+      decision.situationConfidence >= SITUATION_CONFIDENCE_THRESHOLD &&
       decision.category !== null &&
       isProbeCategory(decision.category) &&
-      decision.categoryConfidence >= CONFIDENCE_THRESHOLD;
+      decision.categoryConfidence >= CATEGORY_CONFIDENCE_THRESHOLD;
 
     if (canUseBank && decision.category && isProbeCategory(decision.category)) {
       const { line, nextState } = pickProbeLine(decision.category, bankState);
