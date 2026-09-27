@@ -185,7 +185,11 @@ async function classify(req: ArchitectureRequest, elapsedMinutes: number, lastCa
   };
 }
 
-async function callModerator(req: ArchitectureRequest, directive: string, elapsedMinutes: number): Promise<ArchitectureResult> {
+// Exported so a one-off diagnostic (comparing a canned bank line against
+// what the LLM would have said if forced to probe on the exact same
+// transcript prefix) can reuse the real moderator call path rather than a
+// hand-maintained copy of it -- see app/api/admin/probe-comparison.
+export async function callModerator(req: ArchitectureRequest, directive: string, elapsedMinutes: number): Promise<ArchitectureResult> {
   // Same privacy-instruction fix system1.ts needed -- a real test call
   // there showed the directive leaking straight into spoken output
   // ("...per my instructions").
