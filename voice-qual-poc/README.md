@@ -1,4 +1,4 @@
-# Voice qual moderation: local ElevenLabs+Claude pipeline
+# Voice qual moderation: local ElevenLabs / Cartesia pipelines
 
 This project started as a GPT-Live-1 vs. ElevenLabs Agents comparison.
 GPT-Live turned out unreliable in testing (see `archive/gpt_live/` below),
@@ -29,6 +29,46 @@ Creates (and caches, in `.elevenlabs_agents.json`) an ElevenLabs agent on
 first run — check https://elevenlabs.io/app/agents to see or edit it
 directly; delete its entry from `.elevenlabs_agents.json` to force
 recreation after editing `prompts/moderator_rules.txt`.
+
+## Pipeline B (`pipelines/cartesia_claude/`)
+
+The same setup on Cartesia instead: a Cartesia Managed Agent (Ink-2 ASR +
+turn detection, an LLM from Cartesia's catalog, Sonic TTS) as one hosted
+loop, with the same moderator prompt, interview guide and transcript
+schema as Pipeline A — so a session from either one can be compared
+directly. Not yet run against a live Cartesia account.
+
+```bash
+# in .env: CARTESIA_API_KEY (and optionally CARTESIA_LLM_MODEL, CARTESIA_VOICE_ID)
+python -m pipelines.cartesia_claude.run --list-models   # which LLMs Cartesia offers you
+python -m pipelines.cartesia_claude.run
+```
+
+Things that differ from Pipeline A:
+
+- **The LLM is Cartesia's, not ours.** Cartesia hosts the model and bills
+  for it; no Anthropic key is involved. `CARTESIA_LLM_MODEL` defaults to
+  `claude-haiku-4.5`, the Claude model Cartesia's docs name. If the catalog
+  doesn't have the model Pipeline A runs (`MODERATOR_MODEL`), use the same
+  model on both sides, or the comparison is measuring the LLM too.
+- **Pacing is sent differently.** Cartesia has no mid-call context message.
+  The pacing rules are appended to the agent's instructions and read the
+  `{{interview_started_utc}}` (sent at session start) and
+  `{{system__time_utc}}` (filled in by Cartesia before every reply) dynamic
+  variables. So the time check refreshes on every turn, instead of every 30s
+  as it does in Pipeline A.
+- **The agent hangs up by itself** (Cartesia's `end_call` system tool) after
+  the closing line. Inactivity check-ins are set to 20s instead of the 8s
+  default, so a participant who stops to think doesn't get talked over.
+- **`latency_ms` is filled in** on moderator turns: the time from the
+  participant's finished transcript arriving to the first agent audio. It
+  leaves out Cartesia's own end-of-turn detection, so real perceived latency
+  is somewhat higher.
+
+The agent is cached in `.cartesia_agents.json`, one per LLM model; delete
+the entry to force recreation after editing the prompt. Each run also
+prints the Cartesia `call_id`, which you can look up in the Playground
+(Agents → Calls) for Cartesia's own transcript and recording.
 
 ## Interview guides
 

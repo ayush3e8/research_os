@@ -6,3 +6,4 @@ transcripts/*.json
 transcripts/*.jsonl
 transcripts/playground/
 .elevenlabs_agents.json
+.cartesia_agents.json

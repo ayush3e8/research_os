@@ -1,19 +1,19 @@
 # Side-by-side scorecard
 
-Run the same interview guide (`common/interview_guide.py`) through both
-pipelines with the same person playing the participant, back to back, then
-fill this in immediately while it's fresh.
+Run the same interview guide (`INTERVIEW_GUIDE` in `.env`) through both
+pipelines, back to back, with the same person playing the participant.
+Fill this in right after, while it's fresh.
 
-| Dimension | ElevenLabs + Claude | GPT-Live-1 + Claude | Notes |
+| Dimension | A: ElevenLabs + Claude | B: Cartesia + Claude | Notes |
 |---|---|---|---|
-| Perceived response latency (end of your speech → moderator starts talking) | | | pull actual ms from `transcripts/*.json` `latency_ms` field |
-| Handles barge-in / interruption | | | full-duplex should win here by design |
-| Voice naturalness / prosody | | | subjective 1-5 |
-| Turn-taking (does it wait for you to finish, does it interrupt) | | | |
-| Follow-up question quality | n/a — same Claude brain both sides | n/a | should be near-identical since reasoning is shared; flag if it *isn't* |
-| Recovery from ASR mistakes | | | |
-| Cost per 10-min session | $0.30/min ElevenLabs (varies by plan) + Whisper + Claude tokens | $0.05/min GPT-Live-1 + Claude tokens (delegation backend) | fill in your actual plan rates |
-| Setup/integration effort | manual turn-taking, 3 services to glue | 1 voice service + delegation event loop | |
+| Perceived response latency (end of your speech → moderator starts talking) | | | B logs `latency_ms` in `transcripts/cartesia_claude_*.json`, but it leaves out end-of-turn detection, so it reads low. A doesn't log it yet, so time both by feel or from a recording |
+| Handles barge-in / interruption | | | both full-duplex; B marks cut-off moderator turns `[interrupted]` |
+| Voice naturalness / prosody | | | subjective 1-5 (A: `eleven_v3_conversational`, B: Sonic) |
+| Turn-taking (does it wait for you to finish, does it interrupt) | | | watch for cutting in on thinking pauses |
+| ASR accuracy on domain terms (drug names, company names) | | | neither has keyterms configured yet |
+| Pacing / wraps up on time | | | A: time check every 30s via `contextual_update`; B: re-rendered into the instructions every turn |
+| Follow-up question quality | | | same prompt both sides. Only comparable if both run the same LLM (check `meta.model` in each transcript) |
+| Cost per 10-min session | | | fill in your actual plan rates. Cartesia LLM usage is free until 2026-10-01 |
 | Would you use it for a real study? | | | |
 
 ## How to run a session
@@ -25,9 +25,7 @@ pip install -r requirements.txt
 cp .env.example .env   # fill in keys
 
 python -m pipelines.elevenlabs_claude.run
-python -m pipelines.gpt_live.run
+python -m pipelines.cartesia_claude.run
 ```
 
-Transcripts + latency land in `transcripts/*.json`. Raw GPT-Live wire events
-land in `transcripts/gpt_live_debug.jsonl` — useful since the API shipped
-2026-09-10 and field names may not exactly match this code yet.
+Transcripts land in `transcripts/*.json`, in the same schema for both.
